@@ -66,6 +66,10 @@ class OptionsState extends MusicBeatState
 		bg.screenCenter();
 		add(bg);
 
+		#if android
+		if (!showDataFolder()) options.remove('Open Data Folder');
+		#end
+
 		grpOptions = new FlxTypedGroup<Alphabet>();
 		add(grpOptions);
 
@@ -92,10 +96,24 @@ class OptionsState extends MusicBeatState
 		super.create();
 	}
 
+	#if android
+	static function showDataFolder():Bool
+		return !mobile.StorageUtil.useExternal();
+	#end
+
 	override function closeSubState()
 	{
 		super.closeSubState();
 		ClientPrefs.saveSettings();
+		#if android
+		if (options.contains('Open Data Folder') != showDataFolder())
+		{
+			FlxTransitionableState.skipNextTransIn = true;
+			FlxTransitionableState.skipNextTransOut = true;
+			MusicBeatState.resetState();
+			return;
+		}
+		#end
 		#if DISCORD_ALLOWED
 		DiscordClient.changePresence("Options Menu", null);
 		#end

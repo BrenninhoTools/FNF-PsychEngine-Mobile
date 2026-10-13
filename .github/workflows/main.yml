@@ -45,8 +45,34 @@ jobs:
       - name: Skip SScript setup mode
         run: echo 'oy9:showMacroty8:loopCosti25y10:includeAllfg' >> ~/settings.cocoa
 
+      - name: Prepare Signing Key
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > release.keystore
+            echo "SIGNING_FLAG=-D ANDROID_SIGNING" >> $GITHUB_ENV
+          else
+            echo "No ANDROID_KEYSTORE_BASE64 secret, building with the debug key"
+          fi
+
       - name: Compile
-        run: haxelib run lime build android -D officialBuild
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: haxelib run lime build android -D officialBuild $SIGNING_FLAG
+
+      - name: Verify APK
+        run: |
+          BUILD_TOOLS=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -n 1)
+          APKS=$(find export/release/android/bin/app/build/outputs/apk -name "*.apk")
+          if [ -z "$APKS" ]; then echo "No APK found"; exit 1; fi
+          for APK in $APKS; do
+            echo "Verifying $APK"
+            "$BUILD_TOOLS/zipalign" -c -p 4 "$APK"
+            "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK"
+          done
 
       - name: Publish Artifact
         uses: actions/upload-artifact@v4.3.4
@@ -71,6 +97,14 @@ jobs:
           haxelib install hxcpp > /dev/null --quiet
           chmod +x ./setup/unix.sh
           sh ./setup/unix.sh
+
+      - name: Add iOS LuaJIT Libraries
+        run: |
+          git clone https://github.com/HomuHomu833/linc_luajit /tmp/linc_luajit_ios
+          git -C /tmp/linc_luajit_ios checkout 4eef1dcb383acc270923f8009c046caa42a4b3b5
+          LUA_PATH=$(haxelib libpath linc_luajit)
+          mkdir -p "$LUA_PATH/lib/lua/lib/iPhone"
+          cp /tmp/linc_luajit_ios/lib/lua/lib/iPhone/*.a "$LUA_PATH/lib/lua/lib/iPhone/"
 
       - name: Skip SScript setup mode
         run: echo 'oy9:showMacroty8:loopCosti25y10:includeAllfg' >> ~/settings.cocoa
