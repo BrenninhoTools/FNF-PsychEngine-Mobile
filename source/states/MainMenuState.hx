@@ -128,7 +128,7 @@ class MainMenuState extends MusicBeatState
 		#if mobile
 		var backButton:mobile.MobileButton = mobile.MobileButton.back(null, true);
 		add(backButton);
-		editorsButton = new mobile.TouchButton(16, 60, Language.getPhrase('mainmenu_editors', 'EDITORS'));
+		editorsButton = new mobile.ImageButton(16, 50, 'editorButton', 0.6);
 		add(editorsButton);
 		#end
 	}
@@ -150,7 +150,7 @@ class MainMenuState extends MusicBeatState
 
 	var selectedSomethin:Bool = false;
 	#if mobile
-	var editorsButton:mobile.TouchButton;
+	var editorsButton:mobile.ImageButton;
 	#end
 
 	var timeNotMoving:Float = 0;
