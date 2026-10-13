@@ -35,12 +35,10 @@ jobs:
           chmod +x ./setup/unix.sh
           sh ./setup/unix.sh
 
-      - name: Update Android LuaJIT Libraries
+      - name: Use Bundled Lua
         run: |
-          git clone https://github.com/HomuHomu833/linc_luajit /tmp/linc_luajit_mobile
-          git -C /tmp/linc_luajit_mobile checkout 4eef1dcb383acc270923f8009c046caa42a4b3b5
           LUA_PATH=$(haxelib libpath linc_luajit)
-          cp /tmp/linc_luajit_mobile/lib/lua/lib/Android/*.a "$LUA_PATH/lib/lua/lib/Android/"
+          for LIB in "$LUA_PATH"/lib/lua/lib/Android/*.a; do printf '!<arch>\n' > "$LIB"; done
 
       - name: Configure Android
         run: |
@@ -105,13 +103,12 @@ jobs:
           chmod +x ./setup/unix.sh
           sh ./setup/unix.sh
 
-      - name: Add iOS LuaJIT Libraries
+      - name: Use Bundled Lua
         run: |
-          git clone https://github.com/HomuHomu833/linc_luajit /tmp/linc_luajit_ios
-          git -C /tmp/linc_luajit_ios checkout 4eef1dcb383acc270923f8009c046caa42a4b3b5
           LUA_PATH=$(haxelib libpath linc_luajit)
           mkdir -p "$LUA_PATH/lib/lua/lib/iPhone"
-          cp /tmp/linc_luajit_ios/lib/lua/lib/iPhone/*.a "$LUA_PATH/lib/lua/lib/iPhone/"
+          printf '!<arch>\n' > "$LUA_PATH/lib/lua/lib/iPhone/libluajit.iphoneos-64.a"
+          printf '!<arch>\n' > "$LUA_PATH/lib/lua/lib/iPhone/libluajit.iphonesim-64.a"
 
       - name: Skip SScript setup mode
         run: echo 'oy9:showMacroty8:loopCosti25y10:includeAllfg' >> ~/settings.cocoa

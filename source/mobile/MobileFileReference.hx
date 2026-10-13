@@ -10,6 +10,16 @@ import openfl.net.FileReference;
 import lime.system.JNI;
 #end
 
+#if ios
+@:build(mobile.NativeBuild.addFiles('project/ios', 'mm', 'psych_ios'))
+@:cppFileCode('
+extern "C" void psych_ios_dialog_reset(void);
+extern "C" int psych_ios_dialog_status(void);
+extern "C" const char *psych_ios_dialog_result(void);
+extern "C" void psych_ios_dialog_save(const char *sourcePath);
+extern "C" void psych_ios_dialog_open(const char *cacheDir);
+')
+#end
 class MobileFileReference extends FileReference
 {
 	static inline final IDLE:Int = 0;
@@ -38,11 +48,11 @@ class MobileFileReference extends FileReference
 		super();
 	}
 
-	static function tempDirectory():String
+	static function tempDirectory(?sub:String = ''):String
 	{
-		var dir:String = Path.addTrailingSlash(lime.system.System.applicationStorageDirectory) + 'file_dialogs/';
+		var dir:String = Path.addTrailingSlash(lime.system.System.applicationStorageDirectory) + 'file_dialogs/' + sub;
 		if (!FileSystem.exists(dir)) FileSystem.createDirectory(dir);
-		return dir;
+		return Path.addTrailingSlash(dir);
 	}
 
 	static function mimeFor(fileName:String):String
@@ -59,57 +69,79 @@ class MobileFileReference extends FileReference
 		}
 	}
 
+	static function nativeReset()
+	{
+		#if android
+		jni('reset', '()V')();
+		#elseif ios
+		untyped __cpp__('psych_ios_dialog_reset()');
+		#end
+	}
+
+	static function nativeStatus():Int
+	{
+		#if android
+		return jni('getStatus', '()I')();
+		#elseif ios
+		return untyped __cpp__('psych_ios_dialog_status()');
+		#else
+		return CANCELLED;
+		#end
+	}
+
+	static function nativeResult():String
+	{
+		#if android
+		return jni('getResultPath', '()Ljava/lang/String;')();
+		#elseif ios
+		return untyped __cpp__('::String(psych_ios_dialog_result())');
+		#else
+		return '';
+		#end
+	}
+
 	override public function save(data:Dynamic, defaultFileName:String = null):Void
 	{
 		if (defaultFileName == null || defaultFileName.length == 0) defaultFileName = 'file';
+		defaultFileName = Path.withoutDirectory(defaultFileName);
 		var bytes:Bytes = Std.isOfType(data, Bytes) ? cast data : Bytes.ofString(Std.string(data));
 
-		#if android
 		try
 		{
+			opening = false;
+			nativeReset();
+			@:privateAccess this.name = defaultFileName;
+			#if android
 			var tempPath:String = tempDirectory() + 'pending_save';
 			File.saveBytes(tempPath, bytes);
-			opening = false;
-			jni('reset', '()V')();
 			jni('save', '(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V')(tempPath, defaultFileName, mimeFor(defaultFileName));
-			@:privateAccess this.name = defaultFileName;
+			#elseif ios
+			var tempPath:String = tempDirectory('export') + defaultFileName;
+			File.saveBytes(tempPath, bytes);
+			untyped __cpp__('psych_ios_dialog_save({0}.utf8_str())', tempPath);
+			#end
 			startPolling();
 		}
 		catch (e:Dynamic)
 		{
 			dispatchEvent(new IOErrorEvent(IOErrorEvent.IO_ERROR));
 		}
-		#else
-		try
-		{
-			var dir:String = Path.addTrailingSlash(lime.system.System.documentsDirectory) + 'saves/';
-			if (!FileSystem.exists(dir)) FileSystem.createDirectory(dir);
-			File.saveBytes(dir + defaultFileName, bytes);
-			@:privateAccess this.name = defaultFileName;
-			@:privateAccess this.__path = dir + defaultFileName;
-			dispatchEvent(new Event(Event.COMPLETE));
-		}
-		catch (e:Dynamic)
-		{
-			dispatchEvent(new IOErrorEvent(IOErrorEvent.IO_ERROR));
-		}
-		#end
 	}
 
 	override public function browse(typeFilter:Array<FileFilter> = null):Bool
 	{
-		#if android
 		@:privateAccess this.__path = null;
 		@:privateAccess this.__data = null;
 		opening = true;
-		jni('reset', '()V')();
-		jni('open', '(Ljava/lang/String;Ljava/lang/String;)V')('*/*', tempDirectory());
+		nativeReset();
+		#if android
+		jni('open', '(Ljava/lang/String;Ljava/lang/String;)V')('*/*', tempDirectory('import'));
+		#elseif ios
+		var cacheDir:String = tempDirectory('import');
+		untyped __cpp__('psych_ios_dialog_open({0}.utf8_str())', cacheDir);
+		#end
 		startPolling();
 		return true;
-		#else
-		dispatchEvent(new Event(Event.CANCEL));
-		return false;
-		#end
 	}
 
 	function startPolling()
@@ -128,8 +160,7 @@ class MobileFileReference extends FileReference
 
 	function poll()
 	{
-		#if android
-		var status:Int = jni('getStatus', '()I')();
+		var status:Int = nativeStatus();
 		if (status == WAITING || status == IDLE) return;
 
 		stopPolling();
@@ -137,7 +168,7 @@ class MobileFileReference extends FileReference
 		{
 			if (opening)
 			{
-				var path:String = jni('getResultPath', '()Ljava/lang/String;')();
+				var path:String = nativeResult();
 				@:privateAccess this.__path = path;
 				@:privateAccess this.name = Path.withoutDirectory(path);
 				try
@@ -152,7 +183,6 @@ class MobileFileReference extends FileReference
 			dispatchEvent(new Event(Event.CANCEL));
 		else
 			dispatchEvent(new IOErrorEvent(IOErrorEvent.IO_ERROR));
-		jni('reset', '()V')();
-		#end
+		nativeReset();
 	}
 }
