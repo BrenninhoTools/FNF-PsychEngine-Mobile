@@ -16,7 +16,7 @@ import org.haxe.extension.Extension;
 public class Storage
 {
 	public static final String FOLDER = ".PsychEngine";
-	private static final String APP_FOLDER_MARKER = ".use_app_folder";
+	private static final String EXTERNAL_MARKER = ".use_external";
 
 	public static File getAppDir(Context context)
 	{
@@ -37,14 +37,14 @@ public class Storage
 		return true;
 	}
 
-	public static boolean useAppFolder(Context context)
+	public static boolean useExternal(Context context)
 	{
-		return new File(getAppDir(context), APP_FOLDER_MARKER).exists();
+		return new File(getAppDir(context), EXTERNAL_MARKER).exists();
 	}
 
 	public static File getGameDir(Context context)
 	{
-		if (!useAppFolder(context) && hasAccess(context))
+		if (useExternal(context) && hasAccess(context))
 		{
 			File dir = getPublicDir();
 			if (!dir.exists()) dir.mkdirs();
@@ -59,10 +59,10 @@ public class Storage
 		return context != null && hasAccess(context);
 	}
 
-	public static boolean shouldAsk()
+	public static boolean useExternal()
 	{
 		Context context = Extension.mainContext;
-		return context != null && !hasAccess(context) && !useAppFolder(context);
+		return context != null && useExternal(context);
 	}
 
 	public static String getGameDirPath()
@@ -72,11 +72,11 @@ public class Storage
 		return getGameDir(context).getAbsolutePath();
 	}
 
-	public static void setUseAppFolder(boolean value)
+	public static void setUseExternal(boolean value)
 	{
 		Context context = Extension.mainContext;
 		if (context == null) return;
-		File marker = new File(getAppDir(context), APP_FOLDER_MARKER);
+		File marker = new File(getAppDir(context), EXTERNAL_MARKER);
 		try
 		{
 			if (value) marker.createNewFile();

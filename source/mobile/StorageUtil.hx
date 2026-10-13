@@ -32,10 +32,10 @@ class StorageUtil
 		#end
 	}
 
-	public static function shouldAskAccess():Bool
+	public static function useExternal():Bool
 	{
 		#if android
-		return jni('shouldAsk', '()Z')() == true;
+		return jni('useExternal', '()Z')() == true;
 		#else
 		return false;
 		#end
@@ -57,10 +57,10 @@ class StorageUtil
 		#end
 	}
 
-	public static function setUseAppFolder(value:Bool)
+	public static function setUseExternal(value:Bool)
 	{
 		#if android
-		jni('setUseAppFolder', '(Z)V')(value);
+		jni('setUseExternal', '(Z)V')(value);
 		#end
 	}
 

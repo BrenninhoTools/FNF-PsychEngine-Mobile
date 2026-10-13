@@ -2,6 +2,10 @@ package options;
 
 class MobileSettingsSubState extends BaseOptionsMenu
 {
+	#if android
+	var initialStorage:String;
+	#end
+
 	public function new()
 	{
 		title = Language.getPhrase('mobile_menu', 'Mobile Options');
@@ -19,6 +23,49 @@ class MobileSettingsSubState extends BaseOptionsMenu
 			BOOL);
 		addOption(option);
 
+		#if android
+		ClientPrefs.data.storageType = mobile.StorageUtil.useExternal() ? 'External' : 'Data';
+		initialStorage = ClientPrefs.data.storageType;
+		var option:Option = new Option('Storage Type:',
+			'Data: files stay in the app folder and are deleted when the app is uninstalled.\nExternal: files go to /storage/emulated/0/.PsychEngine and stay after uninstalling.',
+			'storageType',
+			STRING,
+			['Data', 'External']);
+		addOption(option);
+		option.onChange = onChangeStorage;
+		#end
+
 		super();
 	}
+
+	#if android
+	function onChangeStorage()
+	{
+		if (ClientPrefs.data.storageType == 'External' && !mobile.StorageUtil.hasAccess())
+			mobile.StorageUtil.requestAccess();
+	}
+
+	override function close()
+	{
+		super.close();
+		if (ClientPrefs.data.storageType == initialStorage) return;
+
+		var oldDir:String = mobile.StorageUtil.getGameDir();
+		mobile.StorageUtil.setUseExternal(ClientPrefs.data.storageType == 'External');
+		ClientPrefs.saveSettings();
+		if (mobile.StorageUtil.getGameDir() == oldDir) return;
+
+		mobile.StorageUtil.applyGameDir();
+		#if LUA_ALLOWED
+		Mods.pushGlobalMods();
+		#end
+		Mods.loadTopMod();
+		if (mobile.CopyState.needsCopy())
+		{
+			FlxTransitionableState.skipNextTransIn = true;
+			FlxTransitionableState.skipNextTransOut = true;
+			FlxG.switchState(new mobile.CopyState());
+		}
+	}
+	#end
 }

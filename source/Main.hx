@@ -151,9 +151,7 @@ class Main extends Sprite
 		#if ACHIEVEMENTS_ALLOWED Achievements.load(); #end
 		var initialState:Class<FlxState> = cast game.initialState;
 		#if mobile
-		if (mobile.StorageUtil.shouldAskAccess())
-			initialState = mobile.PermissionState;
-		else if (mobile.CopyState.needsCopy())
+		if (mobile.CopyState.needsCopy())
 			initialState = mobile.CopyState;
 		#end
 		addChild(new FlxGame(game.width, game.height, initialState, game.framerate, game.framerate, game.skipSplash, game.startFullscreen));

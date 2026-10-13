@@ -3,6 +3,7 @@ package mobile;
 import flixel.FlxBasic;
 import flixel.FlxObject;
 import flixel.FlxState;
+import flixel.group.FlxSpriteGroup.FlxTypedSpriteGroup;
 import openfl.events.MouseEvent;
 import openfl.events.TouchEvent;
 
@@ -250,11 +251,51 @@ class TouchInput
 		return bounds;
 	}
 
+	@:access(flixel.FlxBasic)
 	static function cameraOf(object:FlxBasic, camera:FlxCamera):FlxCamera
 	{
 		if (camera != null) return camera;
+		if (object._cameras != null && object._cameras.length > 0) return object._cameras[0];
+
+		var state:FlxState = FlxG.state;
+		var containers:Array<FlxState> = [];
+		while (state != null)
+		{
+			containers.unshift(state);
+			state = state.subState;
+		}
+		for (container in containers)
+		{
+			var found:Array<FlxCamera> = findCameras(container, object, container._cameras);
+			if (found != null && found.length > 0) return found[0];
+		}
+
 		var cams:Array<FlxCamera> = object.cameras;
 		return (cams != null && cams.length > 0) ? cams[0] : FlxG.camera;
+	}
+
+	@:access(flixel.FlxBasic)
+	static function findCameras(group:FlxTypedGroup<FlxBasic>, target:FlxBasic, inherited:Array<FlxCamera>):Array<FlxCamera>
+	{
+		if (group == null || group.members == null) return null;
+		for (member in group.members)
+		{
+			if (member == null) continue;
+			var cams:Array<FlxCamera> = member._cameras != null ? member._cameras : inherited;
+			if (member == target) return cams;
+			if (Std.isOfType(member, FlxTypedGroup))
+			{
+				var found:Array<FlxCamera> = findCameras(cast member, target, cams);
+				if (found != null) return found;
+			}
+			else if (Std.isOfType(member, FlxTypedSpriteGroup))
+			{
+				var spriteGroup:FlxTypedSpriteGroup<Dynamic> = cast member;
+				var found:Array<FlxCamera> = findCameras(cast spriteGroup.group, target, cams);
+				if (found != null) return found;
+			}
+		}
+		return null;
 	}
 
 	static function laneOf(key:String):Int
