@@ -294,6 +294,9 @@ class ModsMenuState extends MusicBeatState
 		_lastControllerMode = controls.controllerMode;
 
 		changeSelectedMod();
+		#if mobile
+		add(mobile.MobileButton.back());
+		#end
 		super.create();
 	}
 	

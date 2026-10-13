@@ -201,9 +201,9 @@ class FreeplayState extends MusicBeatState
 
 	#if mobile
 	var backButton:mobile.MobileButton;
-	var previewButton:FlxSpriteGroup;
-	var changersButton:FlxSpriteGroup;
-	var resetButton:FlxSpriteGroup;
+	var previewButton:mobile.TouchButton;
+	var changersButton:mobile.TouchButton;
+	var resetButton:mobile.TouchButton;
 	var dragAccum:Float = 0;
 
 	function createTouchButtons()
@@ -217,19 +217,11 @@ class FreeplayState extends MusicBeatState
 		previewButton = makeTouchButton(Language.getPhrase('freeplay_touch_preview', 'LISTEN'), changersButton.x - 170, buttonY);
 	}
 
-	function makeTouchButton(label:String, x:Float, y:Float):FlxSpriteGroup
+	function makeTouchButton(label:String, x:Float, y:Float):mobile.TouchButton
 	{
-		var group:FlxSpriteGroup = new FlxSpriteGroup(x, y);
-		var bgButton:FlxSprite = new FlxSprite().makeGraphic(160, 46, FlxColor.BLACK);
-		bgButton.alpha = 0.6;
-		group.add(bgButton);
-		var text:FlxText = new FlxText(0, 0, 160, label, 20);
-		text.setFormat(Paths.font("vcr.ttf"), 20, FlxColor.WHITE, CENTER);
-		text.y = (46 - text.height) / 2;
-		group.add(text);
-		group.scrollFactor.set();
-		add(group);
-		return group;
+		var button:mobile.TouchButton = new mobile.TouchButton(x, y, label);
+		add(button);
+		return button;
 	}
 
 	function updateTouch()
@@ -238,7 +230,7 @@ class FreeplayState extends MusicBeatState
 		mobile.TouchInput.blockGestures = !player.playingMusic;
 
 		changersButton.visible = resetButton.visible = !player.playingMusic;
-		if (mobile.TouchInput.tappedOn(previewButton))
+		if (previewButton.justTapped)
 		{
 			touchPreview = true;
 			return;
@@ -248,12 +240,12 @@ class FreeplayState extends MusicBeatState
 			dragAccum = 0;
 			return;
 		}
-		if (mobile.TouchInput.tappedOn(changersButton))
+		if (changersButton.justTapped)
 		{
 			touchChangers = true;
 			return;
 		}
-		if (mobile.TouchInput.tappedOn(resetButton))
+		if (resetButton.justTapped)
 		{
 			touchReset = true;
 			return;

@@ -24,10 +24,10 @@ class MobileButton extends FlxSprite
 		TouchInput.register(this);
 	}
 
-	public static function back(?camera:FlxCamera):MobileButton
+	public static function back(?camera:FlxCamera, top:Bool = false):MobileButton
 	{
 		var button:MobileButton = new MobileButton('backButton', 'back', 'back', 0.5);
-		button.setPosition(FlxG.width - button.width - MARGIN, FlxG.height - button.height - MARGIN);
+		button.setPosition(FlxG.width - button.width - MARGIN, top ? MARGIN : FlxG.height - button.height - MARGIN);
 		if (camera != null) button.cameras = [camera];
 		return button;
 	}

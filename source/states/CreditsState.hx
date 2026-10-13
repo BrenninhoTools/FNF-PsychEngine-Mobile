@@ -127,6 +127,9 @@ class CreditsState extends MusicBeatState
 		bg.color = CoolUtil.colorFromString(creditsStuff[curSelected][4]);
 		intendedColor = bg.color;
 		changeSelection();
+		#if mobile
+		add(mobile.MobileButton.back());
+		#end
 		super.create();
 	}
 
@@ -173,7 +176,18 @@ class CreditsState extends MusicBeatState
 				}
 			}
 
-			if(controls.ACCEPT && (creditsStuff[curSelected][3] == null || creditsStuff[curSelected][3].length > 4)) {
+			var touchAccept:Bool = false;
+			#if mobile
+			var tapped:Int = mobile.TouchInput.tappedRow(cast grpOptions.members);
+			mobile.TouchInput.consumeTap();
+			if (tapped > -1 && !unselectableCheck(tapped))
+			{
+				if (tapped == curSelected) touchAccept = true;
+				else changeSelection(tapped - curSelected);
+			}
+			#end
+
+			if((controls.ACCEPT || touchAccept) && (creditsStuff[curSelected][3] == null || creditsStuff[curSelected][3].length > 4)) {
 				CoolUtil.browserLoad(creditsStuff[curSelected][3]);
 			}
 			if (controls.BACK)

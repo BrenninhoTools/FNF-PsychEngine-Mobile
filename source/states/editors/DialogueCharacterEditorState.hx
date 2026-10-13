@@ -138,6 +138,9 @@ class DialogueCharacterEditorState extends MusicBeatState implements PsychUIEven
 		updateCharTypeBox();
 		
 		super.create();
+		#if mobile
+		add(new mobile.EditorPad(['ESCAPE SPACE H R Q E', 'W A S D I J K L', 'SHIFT LEFT DOWN UP RIGHT']));
+		#end
 	}
 
 	var UI_typebox:PsychUIBox;

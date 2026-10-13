@@ -118,6 +118,9 @@ class NoteSplashEditorState extends MusicBeatState
         add(curText);
 
         super.create();
+        #if mobile
+        add(new mobile.EditorPad(['ESCAPE SPACE F1 R', 'CONTROL C V SHIFT LEFT DOWN UP RIGHT']));
+        #end
     }
 
     var animDropDown:PsychUIDropDownMenu;

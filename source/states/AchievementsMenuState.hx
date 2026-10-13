@@ -121,6 +121,9 @@ class AchievementsMenuState extends MusicBeatState
 		add(nameText);
 		
 		_changeSelection();
+		#if mobile
+		add(mobile.MobileButton.back());
+		#end
 		super.create();
 		
 		FlxG.camera.follow(camFollow, null, 0.15);

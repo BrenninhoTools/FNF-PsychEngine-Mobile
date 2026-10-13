@@ -530,6 +530,9 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		fullTipText.screenCenter();
 		add(fullTipText);
 		super.create();
+		#if mobile
+		add(new mobile.EditorPad(['ESCAPE ENTER SPACE BACKSPACE DELETE HOME END', 'Q W E R Y LBRACKET RBRACKET J', 'A S D F Z X C V', 'SHIFT CONTROL ALT LEFT RIGHT']));
+		#end
 	}
 
 	var gridColors:Array<FlxColor>;

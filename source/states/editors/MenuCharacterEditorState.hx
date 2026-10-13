@@ -65,6 +65,9 @@ class MenuCharacterEditorState extends MusicBeatState implements PsychUIEventHan
 		updateCharacters();
 
 		super.create();
+		#if mobile
+		add(new mobile.EditorPad(['ESCAPE SPACE SHIFT LEFT DOWN UP RIGHT']));
+		#end
 	}
 
 	var UI_typebox:PsychUIBox;

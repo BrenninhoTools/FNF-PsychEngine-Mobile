@@ -124,6 +124,13 @@ class MainMenuState extends MusicBeatState
 		#end
 
 		FlxG.camera.follow(camFollow, null, 0.15);
+
+		#if mobile
+		var backButton:mobile.MobileButton = mobile.MobileButton.back(null, true);
+		add(backButton);
+		editorsButton = new mobile.TouchButton(backButton.x - 176, backButton.y + (backButton.height - 46) / 2, Language.getPhrase('mainmenu_editors', 'EDITORS'));
+		add(editorsButton);
+		#end
 	}
 
 	function createMenuItem(name:String, x:Float, y:Float):FlxSprite
@@ -142,6 +149,9 @@ class MainMenuState extends MusicBeatState
 	}
 
 	var selectedSomethin:Bool = false;
+	#if mobile
+	var editorsButton:mobile.TouchButton;
+	#end
 
 	var timeNotMoving:Float = 0;
 	override function update(elapsed:Float)
@@ -255,6 +265,60 @@ class MainMenuState extends MusicBeatState
 					}
 			}
 
+			var touchAccept:Bool = false;
+			#if mobile
+			if (mobile.TouchInput.justTapped())
+			{
+				mobile.TouchInput.consumeTap();
+				var selectedItem:FlxSprite = switch(curColumn)
+				{
+					case CENTER: menuItems.members[curSelected];
+					case LEFT: leftItem;
+					case RIGHT: rightItem;
+				}
+
+				var tappedItem:FlxSprite = null;
+				if (leftItem != null && mobile.TouchInput.tappedOn(leftItem))
+				{
+					tappedItem = leftItem;
+					if (tappedItem != selectedItem) curColumn = LEFT;
+				}
+				else if (rightItem != null && mobile.TouchInput.tappedOn(rightItem))
+				{
+					tappedItem = rightItem;
+					if (tappedItem != selectedItem) curColumn = RIGHT;
+				}
+				else
+				{
+					for (i in 0...optionShit.length)
+					{
+						if (mobile.TouchInput.tappedOn(menuItems.members[i]))
+						{
+							tappedItem = menuItems.members[i];
+							if (tappedItem != selectedItem)
+							{
+								curColumn = CENTER;
+								curSelected = i;
+							}
+							break;
+						}
+					}
+				}
+
+				if (tappedItem != null)
+				{
+					if (tappedItem == selectedItem) touchAccept = true;
+					else changeItem();
+				}
+			}
+
+			if (editorsButton.justTapped)
+			{
+				selectedSomethin = true;
+				MusicBeatState.switchState(new MasterEditorMenu());
+			}
+			#end
+
 			if (controls.BACK)
 			{
 				selectedSomethin = true;
@@ -263,7 +327,7 @@ class MainMenuState extends MusicBeatState
 				MusicBeatState.switchState(new TitleState());
 			}
 
-			if (controls.ACCEPT || (FlxG.mouse.justPressed && allowMouse))
+			if (controls.ACCEPT || touchAccept || (FlxG.mouse.justPressed && allowMouse))
 			{
 				FlxG.sound.play(Paths.sound('confirmMenu'));
 				selectedSomethin = true;

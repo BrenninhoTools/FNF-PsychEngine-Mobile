@@ -3,15 +3,16 @@ package mobile;
 import flixel.FlxBasic;
 import flixel.FlxObject;
 import flixel.FlxState;
-import openfl.display.Shape;
+import openfl.events.MouseEvent;
+import openfl.events.TouchEvent;
 
 typedef TouchStart =
 {
 	var x:Float;
 	var y:Float;
 	var time:Int;
-	var onOverlay:Bool;
 	var button:MobileButton;
+	var control:FlxObject;
 	var lastY:Float;
 	var dragging:Bool;
 }
@@ -22,9 +23,6 @@ class TouchInput
 	static inline final SWIPE_DISTANCE:Float = 70;
 	static inline final TAP_DISTANCE:Float = 25;
 	static inline final TAP_TIME:Int = 400;
-	static inline final OVERLAY_X:Float = 16;
-	static inline final OVERLAY_Y:Float = 16;
-	static inline final OVERLAY_SIZE:Float = 72;
 
 	public static var hitboxEnabled:Bool = false;
 	public static var blockGestures:Bool = false;
@@ -44,15 +42,17 @@ class TouchInput
 	static var pauseTap:Bool = false;
 	static var dragY:Float = 0;
 	static var dragging:Bool = false;
+	static var tappedControls:Array<FlxObject> = [];
+	static var heldControls:Array<FlxObject> = [];
 
 	static var starts:Map<Int, TouchStart> = new Map();
 	static var buttons:Array<MobileButton> = [];
+	static var controls:Array<FlxObject> = [];
 	static var frame:Int = 0;
 	static var computedFrame:Int = -1;
 
-	static var overlay:Shape;
-	static var overlayVisible:Bool = false;
-	static var overlayPauseIcon:Bool = false;
+	static var activeTouches:Int = 0;
+	static var primaryBlocked:Bool = false;
 	static var initialized:Bool = false;
 
 	public static function init()
@@ -60,16 +60,13 @@ class TouchInput
 		if (initialized) return;
 		initialized = true;
 
-		overlay = new Shape();
-		overlay.visible = false;
-		FlxG.stage.addChild(overlay);
-		drawOverlay();
+		FlxG.stage.addEventListener(TouchEvent.TOUCH_BEGIN, onTouchBegin, false, 1000);
+		FlxG.stage.addEventListener(TouchEvent.TOUCH_END, onTouchEnd, false, 1000);
+		FlxG.stage.addEventListener(MouseEvent.MOUSE_DOWN, onMouseEvent, false, 1000);
+		FlxG.stage.addEventListener(MouseEvent.MOUSE_UP, onMouseEvent, false, 1000);
 
 		FlxG.signals.preUpdate.add(function() frame++);
-		FlxG.signals.postUpdate.add(function() {
-			refresh();
-			updateOverlay();
-		});
+		FlxG.signals.postUpdate.add(refresh);
 	}
 
 	public static function register(button:MobileButton)
@@ -82,6 +79,32 @@ class TouchInput
 		buttons.remove(button);
 		for (start in starts)
 			if (start.button == button) start.button = null;
+	}
+
+	public static function addControl(control:FlxObject)
+	{
+		if (!controls.contains(control)) controls.push(control);
+	}
+
+	public static function removeControl(control:FlxObject)
+	{
+		controls.remove(control);
+		heldControls.remove(control);
+		tappedControls.remove(control);
+		for (start in starts)
+			if (start.control == control) start.control = null;
+	}
+
+	public static function controlTapped(control:FlxObject):Bool
+	{
+		refresh();
+		return tappedControls.contains(control);
+	}
+
+	public static function controlHeld(control:FlxObject):Bool
+	{
+		refresh();
+		return heldControls.contains(control);
 	}
 
 	public static function lanePressedAt(lane:Int):Bool
@@ -157,10 +180,8 @@ class TouchInput
 		{
 			var item:FlxObject = items[i];
 			if (item == null || !item.exists || !item.visible) continue;
-			var pos:FlxPoint = item.getScreenPosition(null, cameraOf(item, null));
-			var hit:Bool = tapY >= pos.y - padding && tapY <= pos.y + item.height + padding;
-			pos.put();
-			if (hit) return i;
+			var bounds:Array<Float> = screenBounds(item, null);
+			if (tapY >= bounds[1] - padding && tapY <= bounds[1] + bounds[3] + padding) return i;
 		}
 		return -1;
 	}
@@ -168,10 +189,19 @@ class TouchInput
 	public static function overlapsScreen(object:FlxObject, x:Float, y:Float, ?camera:FlxCamera, padding:Float = 0):Bool
 	{
 		if (object == null || !object.exists || !object.visible) return false;
-		var pos:FlxPoint = object.getScreenPosition(null, cameraOf(object, camera));
-		var hit:Bool = x >= pos.x - padding && x <= pos.x + object.width + padding && y >= pos.y - padding && y <= pos.y + object.height + padding;
+		var bounds:Array<Float> = screenBounds(object, camera);
+		return x >= bounds[0] - padding && x <= bounds[0] + bounds[2] + padding && y >= bounds[1] - padding && y <= bounds[1] + bounds[3] + padding;
+	}
+
+	static function screenBounds(object:FlxObject, camera:FlxCamera):Array<Float>
+	{
+		var cam:FlxCamera = cameraOf(object, camera);
+		var pos:FlxPoint = object.getScreenPosition(null, cam);
+		var marginX:Float = cam.width * 0.5 * (1 - 1 / cam.zoom);
+		var marginY:Float = cam.height * 0.5 * (1 - 1 / cam.zoom);
+		var bounds:Array<Float> = [cam.x + (pos.x - marginX) * cam.zoom, cam.y + (pos.y - marginY) * cam.zoom, object.width * cam.zoom, object.height * cam.zoom];
 		pos.put();
-		return hit;
+		return bounds;
 	}
 
 	public static function dragDeltaY():Float
@@ -233,11 +263,36 @@ class TouchInput
 		return null;
 	}
 
-	static function anyButtonEnabled():Bool
+	static function controlAt(x:Float, y:Float):FlxObject
 	{
-		for (button in buttons)
-			if (buttonEnabled(button)) return true;
-		return false;
+		var i:Int = controls.length - 1;
+		while (i >= 0)
+		{
+			var control:FlxObject = controls[i];
+			if (control != null && control.exists && control.alive && overlapsScreen(control, x, y)) return control;
+			i--;
+		}
+		return null;
+	}
+
+	static function onTouchBegin(e:TouchEvent)
+	{
+		if (FlxG.game == null || FlxG.scaleMode == null) return;
+		var x:Float = (e.stageX - FlxG.game.x) / FlxG.scaleMode.scale.x;
+		var y:Float = (e.stageY - FlxG.game.y) / FlxG.scaleMode.scale.y;
+		var onControl:Bool = buttonAt(x, y) != null || controlAt(x, y) != null;
+		if (activeTouches == 0) primaryBlocked = onControl;
+		activeTouches++;
+	}
+
+	static function onTouchEnd(e:TouchEvent)
+	{
+		if (activeTouches > 0) activeTouches--;
+	}
+
+	static function onMouseEvent(e:MouseEvent)
+	{
+		if (primaryBlocked) e.stopImmediatePropagation();
 	}
 
 	static function refresh()
@@ -252,6 +307,8 @@ class TouchInput
 		}
 		swipeUp = swipeDown = swipeLeft = swipeRight = tap = tapConsumed = backTap = pauseTap = dragging = false;
 		dragY = 0;
+		tappedControls.resize(0);
+		heldControls.resize(0);
 
 		var activeIds:Array<Int> = [];
 		for (touch in FlxG.touches.list)
@@ -263,17 +320,27 @@ class TouchInput
 			if (touch.justPressed)
 			{
 				var button:MobileButton = buttonAt(x, y);
-				var onOverlay:Bool = button == null && overlayVisible && overOverlay(x, y);
+				var control:FlxObject = button == null ? controlAt(x, y) : null;
 				if (button != null) button.press();
-				starts.set(id, {x: x, y: y, time: FlxG.game.ticks, onOverlay: onOverlay, button: button, lastY: y, dragging: false});
+				starts.set(id, {x: x, y: y, time: FlxG.game.ticks, button: button, control: control, lastY: y, dragging: false});
 			}
 
 			var start:TouchStart = starts.get(id);
 			if (start == null) continue;
 			activeIds.push(id);
 
-			var onControl:Bool = start.onOverlay || start.button != null;
-			if (touch.pressed && !onControl)
+			if (start.control != null)
+			{
+				if (touch.pressed && !heldControls.contains(start.control)) heldControls.push(start.control);
+				if (touch.justReleased)
+				{
+					if (overlapsScreen(start.control, x, y)) tappedControls.push(start.control);
+					starts.remove(id);
+				}
+				continue;
+			}
+
+			if (touch.pressed && start.button == null)
 			{
 				if (!start.dragging && Math.abs(y - start.y) > TAP_DISTANCE) start.dragging = true;
 				if (start.dragging)
@@ -302,11 +369,6 @@ class TouchInput
 						if (start.button.key == 'pause') pauseTap = true;
 						else backTap = true;
 					}
-					continue;
-				}
-				if (start.onOverlay)
-				{
-					if (overOverlay(x, y)) backTap = pauseTap = true;
 					continue;
 				}
 
@@ -341,63 +403,5 @@ class TouchInput
 		#if android
 		if (FlxG.android.justReleased.BACK) backTap = pauseTap = true;
 		#end
-	}
-
-	static function overOverlay(x:Float, y:Float):Bool
-	{
-		return x >= OVERLAY_X && x <= OVERLAY_X + OVERLAY_SIZE && y >= OVERLAY_Y && y <= OVERLAY_Y + OVERLAY_SIZE;
-	}
-
-	static function updateOverlay()
-	{
-		var state:FlxState = FlxG.state;
-		var visible:Bool = state != null && !Std.isOfType(state, CopyState) && !Std.isOfType(state, states.TitleState) && !anyButtonEnabled();
-		overlayVisible = visible;
-		overlay.visible = visible;
-		if (!visible) return;
-
-		var sub:FlxState = state.subState;
-		var pauseIcon:Bool = Std.isOfType(state, PlayState) && (sub == null || Std.isOfType(sub, CustomFadeTransition));
-		if (pauseIcon != overlayPauseIcon)
-		{
-			overlayPauseIcon = pauseIcon;
-			drawOverlay();
-		}
-
-		var scaleX:Float = FlxG.scaleMode.scale.x;
-		var scaleY:Float = FlxG.scaleMode.scale.y;
-		overlay.x = FlxG.game.x + OVERLAY_X * scaleX;
-		overlay.y = FlxG.game.y + OVERLAY_Y * scaleY;
-		overlay.scaleX = scaleX;
-		overlay.scaleY = scaleY;
-
-		var held:Bool = false;
-		for (start in starts)
-			if (start.onOverlay) held = true;
-		overlay.alpha = held ? 0.9 : 0.55;
-	}
-
-	static function drawOverlay()
-	{
-		var g = overlay.graphics;
-		var size:Float = OVERLAY_SIZE;
-		g.clear();
-		g.beginFill(0x000000, 0.6);
-		g.drawRoundRect(0, 0, size, size, 20, 20);
-		g.endFill();
-		g.beginFill(0xFFFFFF, 1);
-		if (overlayPauseIcon)
-		{
-			g.drawRect(size * 0.3, size * 0.25, size * 0.14, size * 0.5);
-			g.drawRect(size * 0.56, size * 0.25, size * 0.14, size * 0.5);
-		}
-		else
-		{
-			g.moveTo(size * 0.28, size * 0.5);
-			g.lineTo(size * 0.62, size * 0.24);
-			g.lineTo(size * 0.62, size * 0.76);
-			g.lineTo(size * 0.28, size * 0.5);
-		}
-		g.endFill();
 	}
 }

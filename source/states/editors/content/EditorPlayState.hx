@@ -156,6 +156,16 @@ class EditorPlayState extends MusicBeatSubstate
 		super.create();
 
 		cameras = [FlxG.cameras.list[FlxG.cameras.list.length - 1]];
+
+		#if mobile
+		if (mobile.EditorPad.current != null) mobile.EditorPad.current.setSuspended(true);
+		var hitbox:mobile.Hitbox = new mobile.Hitbox();
+		hitbox.cameras = cameras;
+		add(hitbox);
+		var backButton:mobile.MobileButton = mobile.MobileButton.back(null, true);
+		backButton.cameras = cameras;
+		add(backButton);
+		#end
 	}
 
 	override function update(elapsed:Float)
@@ -267,6 +277,9 @@ class EditorPlayState extends MusicBeatSubstate
 	{
 		FlxG.stage.removeEventListener(KeyboardEvent.KEY_DOWN, onKeyPress);
 		FlxG.stage.removeEventListener(KeyboardEvent.KEY_UP, onKeyRelease);
+		#if mobile
+		if (mobile.EditorPad.current != null) mobile.EditorPad.current.setSuspended(false);
+		#end
 		FlxG.mouse.visible = true;
 		NoteSplash.configs.clear();
 		FlxG.sound.list.remove(inst);

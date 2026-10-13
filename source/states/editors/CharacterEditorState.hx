@@ -164,6 +164,9 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 		if(ClientPrefs.data.cacheOnGPU) Paths.clearUnusedMemory();
 
 		super.create();
+		#if mobile
+		add(new mobile.EditorPad(['ESCAPE SPACE R F Q E', 'W A S D I J K L', 'SHIFT CONTROL Z C V LEFT DOWN UP RIGHT']));
+		#end
 	}
 
 	function addHelpScreen()

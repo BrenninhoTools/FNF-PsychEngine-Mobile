@@ -185,6 +185,9 @@ class StoryMenuState extends MusicBeatState
 		changeWeek();
 		changeDifficulty();
 
+		#if mobile
+		add(mobile.MobileButton.back());
+		#end
 		super.create();
 	}
 
@@ -222,6 +225,35 @@ class StoryMenuState extends MusicBeatState
 		if (!movedBack && !selectedWeek)
 		{
 			var changeDiff = false;
+			var touchAccept:Bool = false;
+			#if mobile
+			if (mobile.TouchInput.justTapped())
+			{
+				mobile.TouchInput.consumeTap();
+				if (mobile.TouchInput.tappedOn(leftArrow, null, 20))
+					changeDifficulty(-1);
+				else if (mobile.TouchInput.tappedOn(rightArrow, null, 20))
+					changeDifficulty(1);
+				else
+				{
+					for (num => item in grpWeekText.members)
+					{
+						if (mobile.TouchInput.tappedOn(item, null, 10))
+						{
+							if (num == curWeek) touchAccept = true;
+							else
+							{
+								changeWeek(num - curWeek);
+								FlxG.sound.play(Paths.sound('scrollMenu'));
+								changeDiff = true;
+							}
+							break;
+						}
+					}
+				}
+			}
+			#end
+
 			if (controls.UI_UP_P)
 			{
 				changeWeek(-1);
@@ -271,7 +303,7 @@ class StoryMenuState extends MusicBeatState
 				openSubState(new ResetScoreSubState('', curDifficulty, '', curWeek));
 				//FlxG.sound.play(Paths.sound('scrollMenu'));
 			}
-			else if (controls.ACCEPT)
+			else if (controls.ACCEPT || touchAccept)
 				selectWeek();
 		}
 

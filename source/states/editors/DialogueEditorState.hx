@@ -84,6 +84,9 @@ class DialogueEditorState extends MusicBeatState implements PsychUIEventHandler.
 		add(daText);
 		changeText();
 		super.create();
+		#if mobile
+		add(new mobile.EditorPad(['ESCAPE SPACE O P', 'W A S D']));
+		#end
 	}
 
 	var UI_box:PsychUIBox;

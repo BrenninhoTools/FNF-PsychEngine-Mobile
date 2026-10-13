@@ -86,7 +86,22 @@ class PsychUIInputText extends FlxSpriteGroup
 		this.text = text;
 
 		FlxG.stage.addEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
+		#if mobile
+		FlxG.stage.window.onTextInput.add(onTextInput);
+		#end
 	}
+
+	#if mobile
+	static final mobileKeys:Array<FlxKey> = [LEFT, RIGHT, HOME, END, INSERT, BACKSPACE, DELETE, ENTER, ESCAPE];
+
+	function onTextInput(input:String)
+	{
+		if(focusOn != this || input == null) return;
+		for (code in new haxe.iterators.StringIteratorUnicode(input))
+			_typeLetter(code);
+		updateCaret();
+	}
+	#end
 	
 	public var selectIndex:Int = -1;
 	public var caretIndex(default, set):Int = -1;
@@ -223,6 +238,9 @@ class PsychUIInputText extends FlxSpriteGroup
 
 		static final ignored:Array<FlxKey> = [SHIFT, CONTROL, ESCAPE];
 		if(ignored.contains(flxKey)) return;
+		#if mobile
+		if(!mobileKeys.contains(flxKey)) return;
+		#end
 
 		var lastAccent = _nextAccent;
 		switch(keyCode)
@@ -386,6 +404,10 @@ class PsychUIInputText extends FlxSpriteGroup
 			if(focusOn.unfocus != null) focusOn.unfocus();
 			focusOn.resetCaret();
 		}
+		#if mobile
+		if(FlxG.stage != null && FlxG.stage.window != null)
+			FlxG.stage.window.textInputEnabled = v != null;
+		#end
 		return (focusOn = v);
 	}
 
@@ -542,6 +564,9 @@ class PsychUIInputText extends FlxSpriteGroup
 		_boundaries = null;
 		if(focusOn == this) focusOn = null;
 		FlxG.stage.removeEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
+		#if mobile
+		FlxG.stage.window.onTextInput.remove(onTextInput);
+		#end
 		super.destroy();
 	}
 

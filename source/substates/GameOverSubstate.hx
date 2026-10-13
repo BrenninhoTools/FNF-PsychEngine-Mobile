@@ -129,6 +129,13 @@ class GameOverSubstate extends MusicBeatSubstate
 			}
 		}
 
+		#if mobile
+		var buttonCamera:FlxCamera = new FlxCamera();
+		buttonCamera.bgColor.alpha = 0;
+		FlxG.cameras.add(buttonCamera, false);
+		add(mobile.MobileButton.back(buttonCamera));
+		#end
+
 		super.create();
 	}
 

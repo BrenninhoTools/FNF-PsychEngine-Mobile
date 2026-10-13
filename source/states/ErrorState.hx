@@ -31,6 +31,9 @@ class ErrorState extends MusicBeatState
 		errorText.borderSize = 2;
 		errorText.screenCenter();
 		add(errorText);
+		#if mobile
+		add(mobile.MobileButton.back());
+		#end
 		super.create();
 	}
 

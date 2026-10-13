@@ -14,6 +14,7 @@ class OptionsState extends MusicBeatState
 		'Graphics',
 		'Visuals',
 		'Gameplay'
+		#if mobile , 'Mobile Options' #end
 		#if TRANSLATIONS_ALLOWED , 'Language' #end
 		#if mobile , 'Open Data Folder' #end
 	];
@@ -40,6 +41,8 @@ class OptionsState extends MusicBeatState
 			case 'Language':
 				openSubState(new options.LanguageSubState());
 			#if mobile
+			case 'Mobile Options':
+				openSubState(new options.MobileSettingsSubState());
 			case 'Open Data Folder':
 				mobile.DataFolder.open();
 			#end

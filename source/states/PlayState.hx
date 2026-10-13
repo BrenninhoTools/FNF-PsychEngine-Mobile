@@ -624,6 +624,7 @@ class PlayState extends MusicBeatState
 		add(hitbox);
 
 		pauseButton = mobile.MobileButton.pause(camOther);
+		if (!ClientPrefs.data.pauseButtonVisible) pauseButton.alpha = 0;
 		add(pauseButton);
 		#end
 

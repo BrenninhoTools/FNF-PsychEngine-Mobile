@@ -164,7 +164,6 @@ class Main extends Sprite
 		mobile.TouchInput.init();
 		#end
 
-		#if !mobile
 		fpsVar = new FPSCounter(10, 3, 0xFFFFFF);
 		addChild(fpsVar);
 		Lib.current.stage.align = "tl";
@@ -172,6 +171,8 @@ class Main extends Sprite
 		if(fpsVar != null) {
 			fpsVar.visible = ClientPrefs.data.showFPS;
 		}
+		#if mobile
+		scaleFPSCounter();
 		#end
 
 		#if (linux || mac) // fix the app icon not showing up on the Linux Panel / Mac Dock
@@ -207,8 +208,23 @@ class Main extends Sprite
 
 			if (FlxG.game != null)
 			resetSpriteCache(FlxG.game);
+
+			#if mobile
+			scaleFPSCounter();
+			#end
 		});
 	}
+
+	#if mobile
+	static function scaleFPSCounter():Void
+	{
+		if (fpsVar == null || FlxG.scaleMode == null) return;
+		var scale:Float = Math.max(1, Math.min(FlxG.scaleMode.scale.x, FlxG.scaleMode.scale.y));
+		fpsVar.scaleX = fpsVar.scaleY = scale;
+		fpsVar.x = FlxG.game.x + 10 * scale;
+		fpsVar.y = FlxG.game.y + 3 * scale;
+	}
+	#end
 
 	static function resetSpriteCache(sprite:Sprite):Void {
 		@:privateAccess {

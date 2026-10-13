@@ -29,6 +29,7 @@ class Hitbox extends FlxSpriteGroup
 		}
 
 		scrollFactor.set();
+		visible = ClientPrefs.data.hitboxVisible;
 		TouchInput.hitboxEnabled = true;
 	}
 

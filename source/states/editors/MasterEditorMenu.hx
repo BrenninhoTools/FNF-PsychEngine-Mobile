@@ -73,6 +73,9 @@ class MasterEditorMenu extends MusicBeatState
 		changeSelection();
 
 		FlxG.mouse.visible = false;
+		#if mobile
+		add(mobile.MobileButton.back());
+		#end
 		super.create();
 	}
 
@@ -102,7 +105,18 @@ class MasterEditorMenu extends MusicBeatState
 			MusicBeatState.switchState(new MainMenuState());
 		}
 
-		if (controls.ACCEPT)
+		var touchAccept:Bool = false;
+		#if mobile
+		var tapped:Int = mobile.TouchInput.tappedRow(cast grpTexts.members);
+		mobile.TouchInput.consumeTap();
+		if (tapped > -1)
+		{
+			if (tapped == curSelected) touchAccept = true;
+			else changeSelection(tapped - curSelected);
+		}
+		#end
+
+		if (controls.ACCEPT || touchAccept)
 		{
 			switch(options[curSelected]) {
 				case 'Chart Editor'://felt it would be cool maybe

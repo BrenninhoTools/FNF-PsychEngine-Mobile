@@ -100,6 +100,9 @@ class WeekEditorState extends MusicBeatState implements PsychUIEventHandler.Psyc
 		FlxG.mouse.visible = true;
 
 		super.create();
+		#if mobile
+		add(new mobile.EditorPad(['ESCAPE UP DOWN']));
+		#end
 	}
 
 	var UI_box:PsychUIBox;
@@ -589,6 +592,9 @@ class WeekEditorFreeplayState extends MusicBeatState implements PsychUIEventHand
 		addEditorBox();
 		changeSelection();
 		super.create();
+		#if mobile
+		add(new mobile.EditorPad(['ESCAPE UP DOWN']));
+		#end
 	}
 	
 	var UI_box:PsychUIBox;
