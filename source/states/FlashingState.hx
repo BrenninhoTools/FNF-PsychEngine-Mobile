@@ -53,12 +53,34 @@ class FlashingState extends MusicBeatState
 			return;
 		}
 		var back:Bool = controls.BACK;
+		var accept:Bool = controls.ACCEPT;
 		if (controls.UI_LEFT_P || controls.UI_RIGHT_P) {
 			FlxG.sound.play(Paths.sound("scrollMenu"), 0.7);
 			isYes = !isYes;
 			updateItems();
 		}
-		if (controls.ACCEPT || back) {
+		#if mobile
+		mobile.TouchInput.blockGestures = true;
+		if (mobile.TouchInput.justSwiped('ui_left') || mobile.TouchInput.justSwiped('ui_right')) {
+			FlxG.sound.play(Paths.sound("scrollMenu"), 0.7);
+			isYes = !isYes;
+			updateItems();
+		}
+		if (texts.alpha >= 1 && mobile.TouchInput.justTapped()) {
+			for (i in 0...2) {
+				if (tappedOption(texts.members[i + 1], mobile.TouchInput.tapX, mobile.TouchInput.tapY)) {
+					isYes = i == 0;
+					updateItems();
+					accept = true;
+					break;
+				}
+			}
+		}
+		#end
+		if (accept || back) {
+			#if mobile
+			mobile.TouchInput.blockGestures = false;
+			#end
 			leftState = true;
 			FlxTransitionableState.skipNextTransIn = true;
 			FlxTransitionableState.skipNextTransOut = true;
@@ -83,6 +105,16 @@ class FlashingState extends MusicBeatState
 		}
 		super.update(elapsed);
 	}
+
+	#if mobile
+	function tappedOption(text:FlxText, x:Float, y:Float):Bool {
+		var textWidth:Float = text.textField.textWidth;
+		var centerX:Float = text.x + text.width / 2;
+		var padding:Float = 24;
+		return x >= centerX - textWidth / 2 - padding && x <= centerX + textWidth / 2 + padding
+			&& y >= text.y - padding && y <= text.y + text.height + padding;
+	}
+	#end
 
 	function updateItems() {
 		// it's clunky but it works.

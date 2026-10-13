@@ -1,5 +1,6 @@
 package mobile;
 
+import flixel.FlxObject;
 import flixel.FlxState;
 import openfl.display.Shape;
 
@@ -9,6 +10,8 @@ typedef TouchStart =
 	var y:Float;
 	var time:Int;
 	var onButton:Bool;
+	var lastY:Float;
+	var dragging:Bool;
 }
 
 class TouchInput
@@ -22,6 +25,9 @@ class TouchInput
 	static inline final BUTTON_SIZE:Float = 72;
 
 	public static var hitboxEnabled:Bool = false;
+	public static var blockGestures:Bool = false;
+	public static var tapX(default, null):Float = 0;
+	public static var tapY(default, null):Float = 0;
 
 	static var lanePressed:Array<Bool> = [for (i in 0...LANES) false];
 	static var lanePrevious:Array<Bool> = [for (i in 0...LANES) false];
@@ -32,6 +38,8 @@ class TouchInput
 	static var swipeRight:Bool = false;
 	static var tap:Bool = false;
 	static var backTap:Bool = false;
+	static var dragY:Float = 0;
+	static var dragging:Bool = false;
 
 	static var starts:Map<Int, TouchStart> = new Map();
 	static var frame:Int = 0;
@@ -71,16 +79,53 @@ class TouchInput
 		var lane:Int = laneOf(key);
 		if (lane > -1) return lanePressed[lane] && !lanePrevious[lane];
 
+		if (key == 'back' || key == 'pause') return backTap;
+		return !blockGestures && (justSwiped(key) || (key == 'accept' && tap));
+	}
+
+	public static function justSwiped(key:String):Bool
+	{
+		refresh();
 		return switch (key)
 		{
 			case 'ui_up': swipeUp;
 			case 'ui_down': swipeDown;
 			case 'ui_left': swipeLeft;
 			case 'ui_right': swipeRight;
-			case 'accept': tap;
-			case 'back' | 'pause': backTap;
 			default: false;
 		}
+	}
+
+	public static function justTapped():Bool
+	{
+		refresh();
+		return tap;
+	}
+
+	public static function tappedOn(object:FlxObject, ?camera:FlxCamera, padding:Float = 0):Bool
+	{
+		return justTapped() && overlapsScreen(object, tapX, tapY, camera, padding);
+	}
+
+	public static function overlapsScreen(object:FlxObject, x:Float, y:Float, ?camera:FlxCamera, padding:Float = 0):Bool
+	{
+		if (object == null || !object.exists || !object.visible) return false;
+		var pos:FlxPoint = object.getScreenPosition(null, camera != null ? camera : FlxG.camera);
+		var hit:Bool = x >= pos.x - padding && x <= pos.x + object.width + padding && y >= pos.y - padding && y <= pos.y + object.height + padding;
+		pos.put();
+		return hit;
+	}
+
+	public static function dragDeltaY():Float
+	{
+		refresh();
+		return dragY;
+	}
+
+	public static function isDragging():Bool
+	{
+		refresh();
+		return dragging;
 	}
 
 	public static function pressed(key:String):Bool
@@ -124,7 +169,8 @@ class TouchInput
 			lanePrevious[i] = lanePressed[i];
 			lanePressed[i] = false;
 		}
-		swipeUp = swipeDown = swipeLeft = swipeRight = tap = backTap = false;
+		swipeUp = swipeDown = swipeLeft = swipeRight = tap = backTap = dragging = false;
+		dragY = 0;
 
 		var activeIds:Array<Int> = [];
 		for (touch in FlxG.touches.list)
@@ -135,11 +181,22 @@ class TouchInput
 			var onButton:Bool = buttonVisible && overButton(x, y);
 
 			if (touch.justPressed)
-				starts.set(id, {x: x, y: y, time: FlxG.game.ticks, onButton: onButton});
+				starts.set(id, {x: x, y: y, time: FlxG.game.ticks, onButton: onButton, lastY: y, dragging: false});
 
 			var start:TouchStart = starts.get(id);
 			if (start == null) continue;
 			activeIds.push(id);
+
+			if (touch.pressed && !start.onButton)
+			{
+				if (!start.dragging && Math.abs(y - start.y) > TAP_DISTANCE) start.dragging = true;
+				if (start.dragging)
+				{
+					dragY += y - start.lastY;
+					dragging = true;
+				}
+				start.lastY = y;
+			}
 
 			if (touch.pressed && hitboxEnabled && !start.onButton)
 			{
@@ -175,7 +232,11 @@ class TouchInput
 					}
 				}
 				else if (distance <= TAP_DISTANCE && FlxG.game.ticks - start.time <= TAP_TIME)
+				{
 					tap = true;
+					tapX = x;
+					tapY = y;
+				}
 			}
 		}
 

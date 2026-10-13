@@ -175,7 +175,11 @@ class FreeplayState extends MusicBeatState
 		bottomBG.alpha = 0.6;
 		add(bottomBG);
 
+		#if mobile
+		var leText:String = Language.getPhrase("freeplay_tip_mobile", "Tap a song to select it, tap again to play / Drag to scroll / Swipe sideways or tap the difficulty to change it.");
+		#else
 		var leText:String = Language.getPhrase("freeplay_tip", "Press SPACE to listen to the Song / Press CTRL to open the Gameplay Changers Menu / Press RESET to Reset your Score and Accuracy.");
+		#end
 		bottomString = leText;
 		var size:Int = 16;
 		bottomText = new FlxText(bottomBG.x, bottomBG.y + 4, FlxG.width, leText, size);
@@ -185,11 +189,128 @@ class FreeplayState extends MusicBeatState
 		
 		player = new MusicPlayer(this);
 		add(player);
+
+		#if mobile
+		createTouchButtons();
+		#end
 		
 		changeSelection();
 		updateTexts();
 		super.create();
 	}
+
+	#if mobile
+	var previewButton:FlxSpriteGroup;
+	var changersButton:FlxSpriteGroup;
+	var resetButton:FlxSpriteGroup;
+	var dragAccum:Float = 0;
+
+	function createTouchButtons()
+	{
+		var buttonY:Float = bottomBG.y - 56;
+		resetButton = makeTouchButton(Language.getPhrase('freeplay_touch_reset', 'RESET'), FlxG.width - 170, buttonY);
+		changersButton = makeTouchButton(Language.getPhrase('freeplay_touch_changers', 'MODIFIERS'), resetButton.x - 170, buttonY);
+		previewButton = makeTouchButton(Language.getPhrase('freeplay_touch_preview', 'LISTEN'), changersButton.x - 170, buttonY);
+	}
+
+	function makeTouchButton(label:String, x:Float, y:Float):FlxSpriteGroup
+	{
+		var group:FlxSpriteGroup = new FlxSpriteGroup(x, y);
+		var bgButton:FlxSprite = new FlxSprite().makeGraphic(160, 46, FlxColor.BLACK);
+		bgButton.alpha = 0.6;
+		group.add(bgButton);
+		var text:FlxText = new FlxText(0, 0, 160, label, 20);
+		text.setFormat(Paths.font("vcr.ttf"), 20, FlxColor.WHITE, CENTER);
+		text.y = (46 - text.height) / 2;
+		group.add(text);
+		group.scrollFactor.set();
+		add(group);
+		return group;
+	}
+
+	function updateTouch()
+	{
+		touchAccept = touchPreview = touchChangers = touchReset = false;
+		mobile.TouchInput.blockGestures = !player.playingMusic;
+
+		changersButton.visible = resetButton.visible = !player.playingMusic;
+		if (mobile.TouchInput.tappedOn(previewButton))
+		{
+			touchPreview = true;
+			return;
+		}
+		if (player.playingMusic)
+		{
+			dragAccum = 0;
+			return;
+		}
+		if (mobile.TouchInput.tappedOn(changersButton))
+		{
+			touchChangers = true;
+			return;
+		}
+		if (mobile.TouchInput.tappedOn(resetButton))
+		{
+			touchReset = true;
+			return;
+		}
+
+		if (mobile.TouchInput.justSwiped('ui_left') || mobile.TouchInput.justSwiped('ui_right'))
+		{
+			changeDiff(mobile.TouchInput.justSwiped('ui_left') ? -1 : 1);
+			_updateSongLastDifficulty();
+		}
+
+		if (songs.length > 1 && mobile.TouchInput.isDragging())
+		{
+			var step:Float = 100;
+			dragAccum += mobile.TouchInput.dragDeltaY();
+			while (dragAccum >= step)
+			{
+				dragAccum -= step;
+				changeSelection(-1);
+			}
+			while (dragAccum <= -step)
+			{
+				dragAccum += step;
+				changeSelection(1);
+			}
+		}
+		else dragAccum = 0;
+
+		if (!mobile.TouchInput.justTapped()) return;
+
+		var tapX:Float = mobile.TouchInput.tapX;
+		var tapY:Float = mobile.TouchInput.tapY;
+		if (tapX >= scoreText.x - 6 && tapY <= scoreBG.y + scoreBG.height)
+		{
+			changeDiff(tapX < diffText.x + diffText.width / 2 ? -1 : 1);
+			_updateSongLastDifficulty();
+			return;
+		}
+
+		for (i in _lastVisibles)
+		{
+			if (mobile.TouchInput.overlapsScreen(grpSongs.members[i], tapX, tapY, null, 10) || mobile.TouchInput.overlapsScreen(iconArray[i], tapX, tapY))
+			{
+				if (i == curSelected) touchAccept = true;
+				else changeSelection(i - curSelected);
+				break;
+			}
+		}
+	}
+
+	override function openSubState(subState:flixel.FlxSubState)
+	{
+		mobile.TouchInput.blockGestures = false;
+		super.openSubState(subState);
+	}
+	#end
+
+	var touchAccept:Bool = false;
+	var touchPreview:Bool = false;
+	var touchChangers:Bool = false;
+	var touchReset:Bool = false;
 
 	override function closeSubState()
 	{
@@ -228,6 +349,10 @@ class FreeplayState extends MusicBeatState
 
 		if (Math.abs(lerpScore - intendedScore) <= 10)
 			lerpScore = intendedScore;
+
+		#if mobile
+		if (subState == null) updateTouch();
+		#end
 		if (Math.abs(lerpRating - intendedRating) <= 0.01)
 			lerpRating = intendedRating;
 
@@ -323,12 +448,12 @@ class FreeplayState extends MusicBeatState
 			}
 		}
 
-		if(FlxG.keys.justPressed.CONTROL && !player.playingMusic)
+		if((FlxG.keys.justPressed.CONTROL || touchChangers) && !player.playingMusic)
 		{
 			persistentUpdate = false;
 			openSubState(new GameplayChangersSubstate());
 		}
-		else if(FlxG.keys.justPressed.SPACE)
+		else if(FlxG.keys.justPressed.SPACE || touchPreview)
 		{
 			if(instPlaying != curSelected && !player.playingMusic)
 			{
@@ -403,7 +528,7 @@ class FreeplayState extends MusicBeatState
 				player.pauseOrResume(!player.playing);
 			}
 		}
-		else if (controls.ACCEPT && !player.playingMusic)
+		else if ((controls.ACCEPT || touchAccept) && !player.playingMusic)
 		{
 			persistentUpdate = false;
 			var songLowercase:String = Paths.formatToSongPath(songs[curSelected].songName);
@@ -452,7 +577,7 @@ class FreeplayState extends MusicBeatState
 			DiscordClient.loadModRPC();
 			#end
 		}
-		else if(controls.RESET && !player.playingMusic)
+		else if((controls.RESET || touchReset) && !player.playingMusic)
 		{
 			persistentUpdate = false;
 			openSubState(new ResetScoreSubState(songs[curSelected].songName, curDifficulty, songs[curSelected].songCharacter));
@@ -599,6 +724,9 @@ class FreeplayState extends MusicBeatState
 
 	override function destroy():Void
 	{
+		#if mobile
+		mobile.TouchInput.blockGestures = false;
+		#end
 		super.destroy();
 
 		FlxG.autoPause = ClientPrefs.data.autoPause;
