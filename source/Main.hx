@@ -1,7 +1,7 @@
 package;
 
 #if android
-import android.content.Context;
+import extension.androidtools.content.Context;
 #end
 
 import debug.FPSCounter;
@@ -154,7 +154,15 @@ class Main extends Sprite
 		Controls.instance = new Controls();
 		ClientPrefs.loadDefaultKeys();
 		#if ACHIEVEMENTS_ALLOWED Achievements.load(); #end
-		addChild(new FlxGame(game.width, game.height, game.initialState, game.framerate, game.framerate, game.skipSplash, game.startFullscreen));
+		var initialState:Class<FlxState> = cast game.initialState;
+		#if mobile
+		if (mobile.CopyState.needsCopy())
+			initialState = mobile.CopyState;
+		#end
+		addChild(new FlxGame(game.width, game.height, initialState, game.framerate, game.framerate, game.skipSplash, game.startFullscreen));
+		#if mobile
+		mobile.TouchInput.init();
+		#end
 
 		#if !mobile
 		fpsVar = new FPSCounter(10, 3, 0xFFFFFF);

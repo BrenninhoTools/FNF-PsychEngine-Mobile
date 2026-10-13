@@ -207,6 +207,9 @@ class PlayState extends MusicBeatState
 	public var camHUD:FlxCamera;
 	public var camGame:FlxCamera;
 	public var camOther:FlxCamera;
+	#if mobile
+	public var hitbox:mobile.Hitbox;
+	#end
 	public var cameraSpeed:Float = 1;
 
 	public var songScore:Int = 0;
@@ -613,6 +616,12 @@ class PlayState extends MusicBeatState
 
 		FlxG.stage.addEventListener(KeyboardEvent.KEY_DOWN, onKeyPress);
 		FlxG.stage.addEventListener(KeyboardEvent.KEY_UP, onKeyRelease);
+
+		#if mobile
+		hitbox = new mobile.Hitbox();
+		hitbox.cameras = [camOther];
+		add(hitbox);
+		#end
 
 		//PRECACHING THINGS THAT GET USED FREQUENTLY TO AVOID LAGSPIKES
 		if(ClientPrefs.data.hitsoundVolume > 0) Paths.sound('hitsound');
