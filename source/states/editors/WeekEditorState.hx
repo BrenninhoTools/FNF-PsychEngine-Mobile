@@ -3,7 +3,11 @@ package states.editors;
 import backend.WeekData;
 
 import openfl.utils.Assets;
+#if mobile
+import mobile.MobileFileReference as FileReference;
+#else
 import openfl.net.FileReference;
+#end
 import openfl.events.Event;
 import openfl.events.IOErrorEvent;
 import flash.net.FileFilter;

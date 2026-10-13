@@ -137,6 +137,7 @@
 	<haxelib name="flxanimate"/>
 	<haxelib name="extension-androidtools" if="android"/>
 	<dependency name="psychmobile" path="project/android/psychmobile" if="android"/>
+	<config:android extension="org.psychengine.mobile.FileDialogs" if="android"/>
 	<template path="templates" if="ios"/>
 
 	<!-- Disable Discord IO Thread -->

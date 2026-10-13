@@ -9,7 +9,11 @@ import flixel.group.FlxSpriteGroup.FlxTypedSpriteGroup;
 import flixel.input.keyboard.FlxKey;
 import openfl.events.Event;
 import openfl.events.IOErrorEvent;
+#if mobile
+import mobile.MobileFileReference as FileReference;
+#else
 import openfl.net.FileReference;
+#end
 import haxe.Json;
 
 @:access(objects.NoteSplash)

@@ -60,6 +60,9 @@ class FunkinLua {
 	public function new(scriptName:String) {
 		lua = LuaL.newstate();
 		LuaL.openlibs(lua);
+		#if mobile
+		llua.LuaJIT.setmode(lua, 0, llua.LuaJIT.LUAJIT_MODE_OFF);
+		#end
 
 		//trace('Lua version: ' + Lua.version());
 		//trace("LuaJIT version: " + Lua.versionJIT());

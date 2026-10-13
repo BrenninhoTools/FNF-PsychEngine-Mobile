@@ -1,6 +1,10 @@
 package states.editors;
 
+#if mobile
+import mobile.MobileFileReference as FileReference;
+#else
 import openfl.net.FileReference;
+#end
 import openfl.events.Event;
 import openfl.events.IOErrorEvent;
 import flash.net.FileFilter;

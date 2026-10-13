@@ -417,7 +417,7 @@ class LoadingState extends MusicBeatState
 	static function _startPool()
 	{
 		#if (MULTITHREADED_LOADING && mobile)
-		var threadCount:Int = Std.int(Math.max(1, Math.min(2, getCPUThreadsCount() - 1)));
+		var threadCount:Int = 1;
 		#elseif MULTITHREADED_LOADING
 		// Due to the Main thread and Discord thread, we decrease it by 2.
 		var threadCount:Int = Std.int(Math.max(1, getCPUThreadsCount() - #if DISCORD_ALLOWED 2 #else 1 #end));
@@ -581,6 +581,12 @@ class LoadingState extends MusicBeatState
 					songsToPrepare.push(prefixVocals);
 			}
 
+			#if mobile
+			if (player2 != player1)
+				try { preloadCharacter(player2, prefixVocals); } catch (e:Dynamic) {}
+			if ((stageData == null || !stageData.hide_girlfriend) && gfVersion != player2 && gfVersion != player1)
+				try { preloadCharacter(gfVersion); } catch (e:Dynamic) {}
+			#else
 			if (player2 != player1)
 			{
 				threadsMax++;
@@ -589,7 +595,7 @@ class LoadingState extends MusicBeatState
 					completedThread();
 				});
 			}
-			if (!stageData.hide_girlfriend && gfVersion != player2 && gfVersion != player1)
+			if ((stageData == null || !stageData.hide_girlfriend) && gfVersion != player2 && gfVersion != player1)
 			{
 				threadsMax++;
 				threadPool.run(() -> {
@@ -597,6 +603,7 @@ class LoadingState extends MusicBeatState
 					completedThread();
 				});
 			}
+			#end
 
 			if(threadsCompleted == threadsMax)
 			{

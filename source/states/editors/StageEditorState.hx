@@ -15,7 +15,11 @@ import openfl.utils.Assets;
 
 import openfl.display.Sprite;
 
+#if mobile
+import mobile.MobileFileReference as FileReference;
+#else
 import openfl.net.FileReference;
+#end
 
 import openfl.events.Event;
 import openfl.events.IOErrorEvent;

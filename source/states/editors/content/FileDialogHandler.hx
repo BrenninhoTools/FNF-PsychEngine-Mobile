@@ -78,6 +78,15 @@ class FileDialogHandler extends FlxBasic
 		this._dialogMode = OPEN_DIRECTORY;
 		_startUp(onComplete, onCancel, onError);
 
+		#if mobile
+		var exportDir:String = haxe.io.Path.addTrailingSlash(Sys.getCwd()) + 'exports/';
+		if (!sys.FileSystem.exists(exportDir)) sys.FileSystem.createDirectory(exportDir);
+		this.path = exportDir;
+		this.completed = true;
+		if (onComplete != null) onComplete();
+		return;
+		#end
+
 		removeEvents();
 		_currentEvent = onLoadDirectoryComplete;
 		_fileRef.addEventListener(#if desktop Event.SELECT #else Event.COMPLETE #end, _currentEvent);
@@ -175,7 +184,7 @@ class FileDialogHandler extends FlxBasic
 }
 
 //Only way I could find to keep the path after saving a file
-class FileReferenceCustom extends FileReference
+class FileReferenceCustom extends #if mobile mobile.MobileFileReference #else FileReference #end
 {
 	@:allow(backend.FileDialogHandler)
 	var _trackSavedPath:String;
@@ -238,6 +247,8 @@ class FileReferenceCustom extends FileReference
 		}
 		__inputControl.click();
 		return true;
+		#elseif mobile
+		return browse(typeFilter);
 		#end
 
 		return false;
