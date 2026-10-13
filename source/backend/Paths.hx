@@ -447,8 +447,18 @@ class Paths
 	}
 
 	#if MODS_ALLOWED
-	inline static public function mods(key:String = '')
+	#if mobile
+	static var _modsRoot:String = null;
+	#end
+	static public function mods(key:String = '')
+	{
+		#if mobile
+		if (_modsRoot == null) _modsRoot = haxe.io.Path.addTrailingSlash(Sys.getCwd()) + 'mods/';
+		return _modsRoot + key;
+		#else
 		return 'mods/' + key;
+		#end
+	}
 
 	inline static public function modsJson(key:String)
 		return modFolders('data/' + key + '.json');
@@ -486,7 +496,7 @@ class Paths
 			if(FileSystem.exists(fileToCheck))
 				return fileToCheck;
 		}
-		return 'mods/' + key;
+		return mods(key);
 	}
 	#end
 

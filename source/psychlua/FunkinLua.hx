@@ -70,10 +70,14 @@ class FunkinLua {
 		var game:PlayState = PlayState.instance;
 		if(game != null) game.luaArray.push(this);
 
-		var myFolder:Array<String> = this.scriptName.split('/');
 		#if MODS_ALLOWED
-		if(myFolder[0] + '/' == Paths.mods() && (Mods.currentModDirectory == myFolder[1] || Mods.getGlobalMods().contains(myFolder[1]))) //is inside mods folder
-			this.modFolder = myFolder[1];
+		var modsPath:String = Paths.mods();
+		if(this.scriptName.startsWith(modsPath))
+		{
+			var modName:String = this.scriptName.substr(modsPath.length).split('/')[0];
+			if(Mods.currentModDirectory == modName || Mods.getGlobalMods().contains(modName))
+				this.modFolder = modName;
+		}
 		#end
 
 		// Lua shit
