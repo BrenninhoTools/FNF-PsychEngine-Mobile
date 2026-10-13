@@ -7,8 +7,10 @@ class OptionsState extends MusicBeatState
 {
 	var options:Array<String> = [
 		'Note Colors',
+		#if !mobile
 		'Controls',
 		'Adjust Delay and Combo',
+		#end
 		'Graphics',
 		'Visuals',
 		'Gameplay'
