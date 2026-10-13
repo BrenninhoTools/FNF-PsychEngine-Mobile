@@ -1,8 +1,5 @@
 package;
 
-#if android
-import extension.androidtools.content.Context;
-#end
 
 import debug.FPSCounter;
 
@@ -76,10 +73,8 @@ class Main extends Sprite
 		#end
 
 		// Credits to MAJigsaw77 (he's the og author for this code)
-		#if android
-		Sys.setCwd(Path.addTrailingSlash(Context.getExternalFilesDir()));
-		#elseif ios
-		Sys.setCwd(Path.addTrailingSlash(lime.system.System.documentsDirectory));
+		#if mobile
+		mobile.StorageUtil.applyGameDir();
 		#end
 		#if VIDEOS_ALLOWED
 		hxvlc.util.Handle.init(#if (hxvlc >= "1.8.0")  ['--no-lua'] #end);
@@ -156,7 +151,9 @@ class Main extends Sprite
 		#if ACHIEVEMENTS_ALLOWED Achievements.load(); #end
 		var initialState:Class<FlxState> = cast game.initialState;
 		#if mobile
-		if (mobile.CopyState.needsCopy())
+		if (mobile.StorageUtil.shouldAskAccess())
+			initialState = mobile.PermissionState;
+		else if (mobile.CopyState.needsCopy())
 			initialState = mobile.CopyState;
 		#end
 		addChild(new FlxGame(game.width, game.height, initialState, game.framerate, game.framerate, game.skipSplash, game.startFullscreen));

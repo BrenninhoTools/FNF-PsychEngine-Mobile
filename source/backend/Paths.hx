@@ -449,6 +449,8 @@ class Paths
 	#if MODS_ALLOWED
 	#if mobile
 	static var _modsRoot:String = null;
+	public static function resetModsRoot()
+		_modsRoot = null;
 	#end
 	static public function mods(key:String = '')
 	{

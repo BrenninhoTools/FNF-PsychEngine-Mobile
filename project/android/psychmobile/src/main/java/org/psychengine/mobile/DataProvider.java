@@ -37,7 +37,6 @@ public class DataProvider extends DocumentsProvider
 		Document.COLUMN_SIZE
 	};
 
-	private File baseDir;
 
 	public static String getAuthority(Context context)
 	{
@@ -46,21 +45,19 @@ public class DataProvider extends DocumentsProvider
 
 	public static File getBaseDir(Context context)
 	{
-		File dir = context.getExternalFilesDir(null);
-		if (dir == null) dir = context.getFilesDir();
-		return dir;
+		return Storage.getGameDir(context);
 	}
 
 	@Override
 	public boolean onCreate()
 	{
-		baseDir = getBaseDir(getContext());
 		return true;
 	}
 
 	@Override
 	public Cursor queryRoots(String[] projection) throws FileNotFoundException
 	{
+		File baseDir = getBaseDir(getContext());
 		MatrixCursor result = new MatrixCursor(projection != null ? projection : DEFAULT_ROOT_PROJECTION);
 		Context context = getContext();
 		MatrixCursor.RowBuilder row = result.newRow();
@@ -120,6 +117,7 @@ public class DataProvider extends DocumentsProvider
 	@Override
 	public void deleteDocument(String documentId) throws FileNotFoundException
 	{
+		File baseDir = getBaseDir(getContext());
 		File file = getFile(documentId);
 		if (file.equals(baseDir) || !deleteRecursive(file))
 			throw new FileNotFoundException("Could not delete " + documentId);
@@ -128,6 +126,7 @@ public class DataProvider extends DocumentsProvider
 	@Override
 	public String renameDocument(String documentId, String displayName) throws FileNotFoundException
 	{
+		File baseDir = getBaseDir(getContext());
 		File file = getFile(documentId);
 		File target = uniqueFile(file.getParentFile(), displayName);
 		if (file.equals(baseDir) || !file.renameTo(target))
@@ -149,6 +148,7 @@ public class DataProvider extends DocumentsProvider
 
 	private void includeFile(MatrixCursor result, File file)
 	{
+		File baseDir = getBaseDir(getContext());
 		int flags = 0;
 		if (file.isDirectory())
 		{
@@ -176,6 +176,7 @@ public class DataProvider extends DocumentsProvider
 
 	private File getFile(String documentId) throws FileNotFoundException
 	{
+		File baseDir = getBaseDir(getContext());
 		File file = new File(documentId);
 		try
 		{
