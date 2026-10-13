@@ -209,6 +209,7 @@ class PlayState extends MusicBeatState
 	public var camOther:FlxCamera;
 	#if mobile
 	public var hitbox:mobile.Hitbox;
+	public var pauseButton:mobile.MobileButton;
 	#end
 	public var cameraSpeed:Float = 1;
 
@@ -621,6 +622,9 @@ class PlayState extends MusicBeatState
 		hitbox = new mobile.Hitbox();
 		hitbox.cameras = [camOther];
 		add(hitbox);
+
+		pauseButton = mobile.MobileButton.pause(camOther);
+		add(pauseButton);
 		#end
 
 		//PRECACHING THINGS THAT GET USED FREQUENTLY TO AVOID LAGSPIKES

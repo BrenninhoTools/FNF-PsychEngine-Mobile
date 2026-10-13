@@ -139,6 +139,12 @@ class PauseSubState extends MusicBeatSubstate
 		add(missingText);
 
 		regenMenu();
+
+		#if mobile
+		backButton = mobile.MobileButton.back();
+		add(backButton);
+		#end
+
 		cameras = [FlxG.cameras.list[FlxG.cameras.list.length - 1]];
 
 		super.create();
@@ -152,6 +158,10 @@ class PauseSubState extends MusicBeatSubstate
 
 		return (formattedSongName != '') ? formattedSongName : formattedPauseMusic;
 	}
+
+	#if mobile
+	var backButton:mobile.MobileButton;
+	#end
 
 	var holdTime:Float = 0;
 	var cantUnpause:Float = 0.1;
@@ -178,6 +188,18 @@ class PauseSubState extends MusicBeatSubstate
 		}
 
 		updateSkipTextStuff();
+
+		var touchAccept:Bool = false;
+		#if mobile
+		var tapped:Int = mobile.TouchInput.tappedRow(cast grpMenuShit.members);
+		mobile.TouchInput.consumeTap();
+		if (tapped > -1)
+		{
+			if (tapped == curSelected) touchAccept = true;
+			else changeSelection(tapped - curSelected);
+		}
+		#end
+
 		if (controls.UI_UP_P)
 		{
 			changeSelection(-1);
@@ -218,7 +240,7 @@ class PauseSubState extends MusicBeatSubstate
 				}
 		}
 
-		if (controls.ACCEPT && (cantUnpause <= 0 || !controls.controllerMode))
+		if ((controls.ACCEPT || touchAccept) && (cantUnpause <= 0 || !controls.controllerMode))
 		{
 			if (menuItems == difficultyChoices)
 			{

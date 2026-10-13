@@ -200,6 +200,7 @@ class FreeplayState extends MusicBeatState
 	}
 
 	#if mobile
+	var backButton:mobile.MobileButton;
 	var previewButton:FlxSpriteGroup;
 	var changersButton:FlxSpriteGroup;
 	var resetButton:FlxSpriteGroup;
@@ -207,8 +208,11 @@ class FreeplayState extends MusicBeatState
 
 	function createTouchButtons()
 	{
+		backButton = mobile.MobileButton.back();
+		add(backButton);
+
 		var buttonY:Float = bottomBG.y - 56;
-		resetButton = makeTouchButton(Language.getPhrase('freeplay_touch_reset', 'RESET'), FlxG.width - 170, buttonY);
+		resetButton = makeTouchButton(Language.getPhrase('freeplay_touch_reset', 'RESET'), backButton.x - 170, buttonY);
 		changersButton = makeTouchButton(Language.getPhrase('freeplay_touch_changers', 'MODIFIERS'), resetButton.x - 170, buttonY);
 		previewButton = makeTouchButton(Language.getPhrase('freeplay_touch_preview', 'LISTEN'), changersButton.x - 170, buttonY);
 	}

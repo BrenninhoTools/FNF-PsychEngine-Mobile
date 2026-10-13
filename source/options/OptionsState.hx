@@ -77,6 +77,10 @@ class OptionsState extends MusicBeatState
 		changeSelection();
 		ClientPrefs.saveSettings();
 
+		#if mobile
+		add(mobile.MobileButton.back());
+		#end
+
 		super.create();
 	}
 
@@ -91,6 +95,20 @@ class OptionsState extends MusicBeatState
 
 	override function update(elapsed:Float) {
 		super.update(elapsed);
+
+		var touchAccept:Bool = false;
+		#if mobile
+		if (subState == null)
+		{
+			var tapped:Int = mobile.TouchInput.tappedRow(cast grpOptions.members);
+			mobile.TouchInput.consumeTap();
+			if (tapped > -1)
+			{
+				if (tapped == curSelected) touchAccept = true;
+				else changeSelection(tapped - curSelected);
+			}
+		}
+		#end
 
 		if (controls.UI_UP_P)
 			changeSelection(-1);
@@ -108,7 +126,7 @@ class OptionsState extends MusicBeatState
 			}
 			else MusicBeatState.switchState(new MainMenuState());
 		}
-		else if (controls.ACCEPT) openSelectedSubstate(options[curSelected]);
+		else if (controls.ACCEPT || touchAccept) openSelectedSubstate(options[curSelected]);
 	}
 	
 	function changeSelection(change:Int = 0)

@@ -130,6 +130,17 @@ class BaseOptionsMenu extends MusicBeatSubstate
 			return;
 		}
 
+		var touchAccept:Bool = false;
+		#if mobile
+		var tapped:Int = mobile.TouchInput.tappedRow(cast grpOptions.members);
+		mobile.TouchInput.consumeTap();
+		if (tapped > -1)
+		{
+			if (tapped == curSelected) touchAccept = true;
+			else changeSelection(tapped - curSelected);
+		}
+		#end
+
 		if (controls.UI_UP_P)
 		{
 			changeSelection(-1);
@@ -149,7 +160,7 @@ class BaseOptionsMenu extends MusicBeatSubstate
 			switch(curOption.type)
 			{
 				case BOOL:
-					if(controls.ACCEPT)
+					if(controls.ACCEPT || touchAccept)
 					{
 						FlxG.sound.play(Paths.sound('scrollMenu'));
 						curOption.setValue((curOption.getValue() == true) ? false : true);
@@ -158,7 +169,7 @@ class BaseOptionsMenu extends MusicBeatSubstate
 					}
 
 				case KEYBIND:
-					if(controls.ACCEPT)
+					if(controls.ACCEPT || touchAccept)
 					{
 						bindingBlack = new FlxSprite().makeGraphic(1, 1, FlxColor.WHITE);
 						bindingBlack.scale.set(FlxG.width, FlxG.height);
