@@ -1,23 +1,27 @@
 package backend;
 
 #if DISCORD_ALLOWED
+import lime.app.Application;
+#if !mobile
 import Sys.sleep;
 import sys.thread.Thread;
-import lime.app.Application;
 
 import hxdiscord_rpc.Discord;
 import hxdiscord_rpc.Types;
+#end
 
 import flixel.util.FlxStringUtil;
 
 class DiscordClient
 {
 	public static var isInitialized:Bool = false;
-	private inline static final _defaultID:String = "863222024192262205";
+	private inline static final _defaultID:String = #if DISCORD_APP_ID haxe.macro.Compiler.getDefine("DISCORD_APP_ID") #else "863222024192262205" #end;
 	public static var clientID(default, set):String = _defaultID;
 	private static var presence:DiscordPresence = new DiscordPresence();
+	#if !mobile
 	// hides this field from scripts and reflection in general
 	@:unreflective private static var __thread:Thread;
+	#end
 
 	public static function check()
 	{
@@ -38,9 +42,29 @@ class DiscordClient
 	public dynamic static function shutdown()
 	{
 		isInitialized = false;
+		#if mobile
+		mobile.DiscordMobile.shutdown();
+		#else
 		Discord.Shutdown();
+		#end
 	}
-	
+
+	public static function login()
+	{
+		#if mobile
+		if (!isInitialized) initialize();
+		mobile.DiscordMobile.login();
+		#end
+	}
+
+	public static function logout()
+	{
+		#if mobile
+		mobile.DiscordMobile.logout();
+		#end
+	}
+
+	#if !mobile
 	private static function onReady(request:cpp.RawConstPointer<DiscordUser>):Void
 	{
 		final user = cast (request[0].username, String);
@@ -66,8 +90,15 @@ class DiscordClient
 		trace('Discord: Disconnected ($errorCode: ${cast(message, String)})');
 	}
 
+	#end
+
 	public static function initialize()
 	{
+		#if mobile
+		if (!mobile.DiscordMobile.initialize(#if ios _defaultID #else clientID #end)) return;
+		isInitialized = true;
+		updatePresence();
+		#else
 		var discordHandlers:DiscordEventHandlers = DiscordEventHandlers.create();
 		discordHandlers.ready = cpp.Function.fromStaticFunction(onReady);
 		discordHandlers.disconnected = cpp.Function.fromStaticFunction(onDisconnected);
@@ -96,6 +127,7 @@ class DiscordClient
 			});
 		}
 		isInitialized = true;
+		#end
 	}
 
 	public static function changePresence(details:String = 'In the Menus', ?state:String, ?smallImageKey:String, ?hasStartTimestamp:Bool, ?endTimestamp:Float, largeImageKey:String = 'icon')
@@ -119,7 +151,11 @@ class DiscordClient
 
 	public static function updatePresence()
 	{
+		#if mobile
+		mobile.DiscordMobile.update(presence.details, presence.state, presence.largeImageKey, presence.largeImageText, presence.smallImageKey, presence.startTimestamp, presence.endTimestamp);
+		#else
 		Discord.UpdatePresence(cpp.RawConstPointer.addressOf(presence.__presence));
+		#end
 	}
 	
 	inline public static function resetClientID()
@@ -131,6 +167,9 @@ class DiscordClient
 	{
 		var change:Bool = (clientID != newID);
 		clientID = newID;
+		#if ios
+		change = false;
+		#end
 
 		if(change && isInitialized)
 		{
@@ -165,6 +204,34 @@ class DiscordClient
 	#end
 }
 
+#if mobile
+@:allow(backend.DiscordClient)
+private final class DiscordPresence
+{
+	public var state:String;
+	public var details:String;
+	public var smallImageKey:String;
+	public var largeImageKey:String;
+	public var largeImageText:String;
+	public var startTimestamp:Int = 0;
+	public var endTimestamp:Int = 0;
+
+	function new() {}
+
+	public function toString():String
+	{
+		return FlxStringUtil.getDebugString([
+			LabelValuePair.weak("state", state),
+			LabelValuePair.weak("details", details),
+			LabelValuePair.weak("smallImageKey", smallImageKey),
+			LabelValuePair.weak("largeImageKey", largeImageKey),
+			LabelValuePair.weak("largeImageText", largeImageText),
+			LabelValuePair.weak("startTimestamp", startTimestamp),
+			LabelValuePair.weak("endTimestamp", endTimestamp)
+		]);
+	}
+}
+#else
 @:allow(backend.DiscordClient)
 private final class DiscordPresence
 {
@@ -266,4 +333,5 @@ private final class DiscordPresence
 		return __presence.endTimestamp = value;
 	}
 }
+#end
 #end
