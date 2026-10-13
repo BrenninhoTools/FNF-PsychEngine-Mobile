@@ -135,8 +135,21 @@ class CreditsState extends MusicBeatState
 
 	var quitting:Bool = false;
 	var holdTime:Float = 0;
+	#if mobile
+	var dragAccum:Float = 0;
+
+	override function destroy()
+	{
+		mobile.TouchInput.blockGestures = false;
+		super.destroy();
+	}
+	#end
+
 	override function update(elapsed:Float)
 	{
+		#if mobile
+		mobile.TouchInput.blockGestures = true;
+		#end
 		if (FlxG.sound.music.volume < 0.7)
 		{
 			FlxG.sound.music.volume += 0.5 * elapsed;
@@ -148,6 +161,24 @@ class CreditsState extends MusicBeatState
 			{
 				var shiftMult:Int = 1;
 				if(FlxG.keys.pressed.SHIFT) shiftMult = 3;
+
+				#if mobile
+				if (mobile.TouchInput.isDragging())
+				{
+					dragAccum += mobile.TouchInput.dragDeltaY();
+					while (dragAccum >= 90)
+					{
+						dragAccum -= 90;
+						changeSelection(-1);
+					}
+					while (dragAccum <= -90)
+					{
+						dragAccum += 90;
+						changeSelection(1);
+					}
+				}
+				else dragAccum = 0;
+				#end
 
 				var upP = controls.UI_UP_P;
 				var downP = controls.UI_DOWN_P;

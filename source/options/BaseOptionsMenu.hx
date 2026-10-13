@@ -103,6 +103,10 @@ class BaseOptionsMenu extends MusicBeatSubstate
 
 		changeSelection();
 		reloadCheckboxes();
+
+		#if mobile
+		add(mobile.MobileButton.back());
+		#end
 	}
 
 	public function addOption(option:Option) {

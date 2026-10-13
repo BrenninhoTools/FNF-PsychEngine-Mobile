@@ -308,8 +308,24 @@ class ModsMenuState extends MusicBeatState
 
 	var holdTime:Float = 0;
 
+	#if mobile
+	var dragAccum:Float = 0;
+	var touchHoldTime:Float = 0;
+
+	override function destroy()
+	{
+		mobile.TouchInput.blockGestures = false;
+		super.destroy();
+	}
+	#end
+
 	override function update(elapsed:Float)
 	{
+		#if mobile
+		mobile.TouchInput.blockGestures = true;
+		if (FlxG.mouse.justPressed) touchHoldTime = 0;
+		else if (FlxG.mouse.pressed) touchHoldTime += elapsed;
+		#end
 		if(controls.BACK && hoveringOnMods)
 		{
 			saveTxt();
@@ -349,6 +365,24 @@ class ModsMenuState extends MusicBeatState
 		}
 
 		if(controls.UI_DOWN_R || controls.UI_UP_R) holdTime = 0;
+
+		#if mobile
+		if (hoveringOnMods && !holdingMod && modsList.all.length > 1 && mobile.TouchInput.isDragging())
+		{
+			dragAccum += mobile.TouchInput.dragDeltaY();
+			while (dragAccum >= 80)
+			{
+				dragAccum -= 80;
+				changeSelectedMod(-1);
+			}
+			while (dragAccum <= -80)
+			{
+				dragAccum += 80;
+				changeSelectedMod(1);
+			}
+		}
+		else dragAccum = 0;
+		#end
 
 		if(modsList.all.length > 0)
 		{
@@ -412,7 +446,7 @@ class ModsMenuState extends MusicBeatState
 						var curMod:ModItem = modsGroup.members[curSelectedMod];
 						if(curMod != null)
 						{
-							if(!holdingMod && FlxG.mouse.justMoved && FlxG.mouse.overlaps(curMod)) holdingMod = true;
+							if(!holdingMod && FlxG.mouse.justMoved && FlxG.mouse.overlaps(curMod) #if mobile && touchHoldTime > 0.4 && !mobile.TouchInput.isDragging() #end) holdingMod = true;
 
 							if(holdingMod)
 							{

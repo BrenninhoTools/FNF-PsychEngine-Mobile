@@ -167,6 +167,10 @@ class NotesColorSubState extends MusicBeatSubstate
 		FlxG.mouse.visible = !controls.controllerMode;
 		controllerPointer.visible = controls.controllerMode;
 		_lastControllerMode = controls.controllerMode;
+
+		#if mobile
+		add(mobile.MobileButton.back());
+		#end
 	}
 
 	function updateTip()

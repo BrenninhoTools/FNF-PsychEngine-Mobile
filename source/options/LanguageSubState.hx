@@ -92,6 +92,10 @@ class LanguageSubState extends MusicBeatSubstate
 			grpLanguages.add(text);
 		}
 		changeSelected();
+
+		#if mobile
+		add(mobile.MobileButton.back());
+		#end
 	}
 
 	var changedLanguage:Bool = false;
