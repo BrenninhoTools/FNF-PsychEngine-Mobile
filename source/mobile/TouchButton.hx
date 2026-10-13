@@ -9,6 +9,7 @@ class TouchButton extends FlxSpriteGroup
 
 	var bg:FlxSprite;
 	var held:Bool = false;
+	var releaseQueued:Bool = false;
 
 	public function new(x:Float, y:Float, text:String, width:Int = 160, height:Int = 46, size:Int = 20)
 	{
@@ -46,6 +47,13 @@ class TouchButton extends FlxSpriteGroup
 	{
 		super.update(elapsed);
 
+		if (releaseQueued)
+		{
+			releaseQueued = false;
+			bg.alpha = 0.6;
+			if (onRelease != null) onRelease();
+		}
+
 		var nowHeld:Bool = isHeld;
 		if (nowHeld != held)
 		{
@@ -53,6 +61,12 @@ class TouchButton extends FlxSpriteGroup
 			bg.alpha = held ? 0.85 : 0.6;
 			if (held && onPress != null) onPress();
 			else if (!held && onRelease != null) onRelease();
+		}
+		else if (!held && justTapped)
+		{
+			bg.alpha = 0.85;
+			if (onPress != null) onPress();
+			releaseQueued = true;
 		}
 	}
 

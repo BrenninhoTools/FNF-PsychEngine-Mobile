@@ -6,23 +6,38 @@ import flixel.FlxState;
 import openfl.events.MouseEvent;
 import openfl.events.TouchEvent;
 
-typedef TouchStart =
+typedef TouchPoint =
 {
+	var id:Int;
 	var x:Float;
 	var y:Float;
+	var startX:Float;
+	var startY:Float;
+	var lastY:Float;
 	var time:Int;
 	var button:MobileButton;
 	var control:FlxObject;
-	var lastY:Float;
 	var dragging:Bool;
+	var beganThisFrame:Bool;
+}
+
+typedef PendingTouch =
+{
+	var type:Int;
+	var id:Int;
+	var x:Float;
+	var y:Float;
 }
 
 class TouchInput
 {
 	public static inline final LANES:Int = 4;
-	static inline final SWIPE_DISTANCE:Float = 70;
-	static inline final TAP_DISTANCE:Float = 25;
-	static inline final TAP_TIME:Int = 400;
+	static inline final SWIPE_DISTANCE:Float = 60;
+	static inline final TAP_DISTANCE:Float = 40;
+	static inline final DRAG_DISTANCE:Float = 20;
+	static inline final BEGIN:Int = 0;
+	static inline final MOVE:Int = 1;
+	static inline final END:Int = 2;
 
 	public static var hitboxEnabled:Bool = false;
 	public static var blockGestures:Bool = false;
@@ -44,8 +59,10 @@ class TouchInput
 	static var dragging:Bool = false;
 	static var tappedControls:Array<FlxObject> = [];
 	static var heldControls:Array<FlxObject> = [];
+	static var tappedButtons:Array<MobileButton> = [];
 
-	static var starts:Map<Int, TouchStart> = new Map();
+	static var pending:Array<PendingTouch> = [];
+	static var points:Map<Int, TouchPoint> = new Map();
 	static var buttons:Array<MobileButton> = [];
 	static var controls:Array<FlxObject> = [];
 	static var frame:Int = 0;
@@ -61,12 +78,17 @@ class TouchInput
 		initialized = true;
 
 		FlxG.stage.addEventListener(TouchEvent.TOUCH_BEGIN, onTouchBegin, false, 1000);
+		FlxG.stage.addEventListener(TouchEvent.TOUCH_MOVE, onTouchMove, false, 1000);
 		FlxG.stage.addEventListener(TouchEvent.TOUCH_END, onTouchEnd, false, 1000);
 		FlxG.stage.addEventListener(MouseEvent.MOUSE_DOWN, onMouseEvent, false, 1000);
 		FlxG.stage.addEventListener(MouseEvent.MOUSE_UP, onMouseEvent, false, 1000);
 
 		FlxG.signals.preUpdate.add(function() frame++);
-		FlxG.signals.postUpdate.add(refresh);
+		FlxG.signals.postUpdate.add(function() {
+			refresh();
+			FlxG.mouse.visible = false;
+		});
+		FlxG.signals.focusLost.add(clearTouches);
 	}
 
 	public static function register(button:MobileButton)
@@ -77,8 +99,9 @@ class TouchInput
 	public static function unregister(button:MobileButton)
 	{
 		buttons.remove(button);
-		for (start in starts)
-			if (start.button == button) start.button = null;
+		tappedButtons.remove(button);
+		for (point in points)
+			if (point.button == button) point.button = null;
 	}
 
 	public static function addControl(control:FlxObject)
@@ -91,8 +114,8 @@ class TouchInput
 		controls.remove(control);
 		heldControls.remove(control);
 		tappedControls.remove(control);
-		for (start in starts)
-			if (start.control == control) start.control = null;
+		for (point in points)
+			if (point.control == control) point.control = null;
 	}
 
 	public static function controlTapped(control:FlxObject):Bool
@@ -105,6 +128,12 @@ class TouchInput
 	{
 		refresh();
 		return heldControls.contains(control);
+	}
+
+	public static function buttonTapped(button:MobileButton):Bool
+	{
+		refresh();
+		return tappedButtons.contains(button);
 	}
 
 	public static function lanePressedAt(lane:Int):Bool
@@ -193,17 +222,6 @@ class TouchInput
 		return x >= bounds[0] - padding && x <= bounds[0] + bounds[2] + padding && y >= bounds[1] - padding && y <= bounds[1] + bounds[3] + padding;
 	}
 
-	static function screenBounds(object:FlxObject, camera:FlxCamera):Array<Float>
-	{
-		var cam:FlxCamera = cameraOf(object, camera);
-		var pos:FlxPoint = object.getScreenPosition(null, cam);
-		var marginX:Float = cam.width * 0.5 * (1 - 1 / cam.zoom);
-		var marginY:Float = cam.height * 0.5 * (1 - 1 / cam.zoom);
-		var bounds:Array<Float> = [cam.x + (pos.x - marginX) * cam.zoom, cam.y + (pos.y - marginY) * cam.zoom, object.width * cam.zoom, object.height * cam.zoom];
-		pos.put();
-		return bounds;
-	}
-
 	public static function dragDeltaY():Float
 	{
 		refresh();
@@ -219,6 +237,17 @@ class TouchInput
 	public static function isNoteKey(key:String):Bool
 	{
 		return laneOf(key) > -1;
+	}
+
+	static function screenBounds(object:FlxObject, camera:FlxCamera):Array<Float>
+	{
+		var cam:FlxCamera = cameraOf(object, camera);
+		var pos:FlxPoint = object.getScreenPosition(null, cam);
+		var marginX:Float = cam.width * 0.5 * (1 - 1 / cam.zoom);
+		var marginY:Float = cam.height * 0.5 * (1 - 1 / cam.zoom);
+		var bounds:Array<Float> = [cam.x + (pos.x - marginX) * cam.zoom, cam.y + (pos.y - marginY) * cam.zoom, object.width * cam.zoom, object.height * cam.zoom];
+		pos.put();
+		return bounds;
 	}
 
 	static function cameraOf(object:FlxBasic, camera:FlxCamera):FlxCamera
@@ -238,6 +267,14 @@ class TouchInput
 			case 'note_right': 3;
 			default: -1;
 		}
+	}
+
+	static function laneAt(x:Float):Int
+	{
+		var lane:Int = Std.int(x / (FlxG.width / LANES));
+		if (lane < 0) lane = 0;
+		if (lane >= LANES) lane = LANES - 1;
+		return lane;
 	}
 
 	static function buttonEnabled(button:MobileButton):Bool
@@ -275,24 +312,47 @@ class TouchInput
 		return null;
 	}
 
+	static function toGameX(stageX:Float):Float
+		return (stageX - FlxG.game.x) / FlxG.scaleMode.scale.x;
+
+	static function toGameY(stageY:Float):Float
+		return (stageY - FlxG.game.y) / FlxG.scaleMode.scale.y;
+
 	static function onTouchBegin(e:TouchEvent)
 	{
 		if (FlxG.game == null || FlxG.scaleMode == null) return;
-		var x:Float = (e.stageX - FlxG.game.x) / FlxG.scaleMode.scale.x;
-		var y:Float = (e.stageY - FlxG.game.y) / FlxG.scaleMode.scale.y;
+		var x:Float = toGameX(e.stageX);
+		var y:Float = toGameY(e.stageY);
 		var onControl:Bool = buttonAt(x, y) != null || controlAt(x, y) != null;
 		if (activeTouches == 0) primaryBlocked = onControl;
 		activeTouches++;
+		pending.push({type: BEGIN, id: e.touchPointID, x: x, y: y});
+	}
+
+	static function onTouchMove(e:TouchEvent)
+	{
+		if (FlxG.game == null || FlxG.scaleMode == null) return;
+		pending.push({type: MOVE, id: e.touchPointID, x: toGameX(e.stageX), y: toGameY(e.stageY)});
 	}
 
 	static function onTouchEnd(e:TouchEvent)
 	{
 		if (activeTouches > 0) activeTouches--;
+		if (FlxG.game == null || FlxG.scaleMode == null) return;
+		pending.push({type: END, id: e.touchPointID, x: toGameX(e.stageX), y: toGameY(e.stageY)});
 	}
 
 	static function onMouseEvent(e:MouseEvent)
 	{
 		if (primaryBlocked) e.stopImmediatePropagation();
+	}
+
+	static function clearTouches()
+	{
+		pending.resize(0);
+		points.clear();
+		activeTouches = 0;
+		primaryBlocked = false;
 	}
 
 	static function refresh()
@@ -309,99 +369,121 @@ class TouchInput
 		dragY = 0;
 		tappedControls.resize(0);
 		heldControls.resize(0);
+		tappedButtons.resize(0);
 
-		var activeIds:Array<Int> = [];
-		for (touch in FlxG.touches.list)
+		for (point in points)
+			point.beganThisFrame = false;
+
+		var events:Array<PendingTouch> = pending;
+		pending = [];
+		for (event in events)
 		{
-			var id:Int = touch.touchPointID;
-			var x:Float = touch.screenX;
-			var y:Float = touch.screenY;
-
-			if (touch.justPressed)
+			switch (event.type)
 			{
-				var button:MobileButton = buttonAt(x, y);
-				var control:FlxObject = button == null ? controlAt(x, y) : null;
-				if (button != null) button.press();
-				starts.set(id, {x: x, y: y, time: FlxG.game.ticks, button: button, control: control, lastY: y, dragging: false});
-			}
+				case BEGIN:
+					var button:MobileButton = buttonAt(event.x, event.y);
+					var control:FlxObject = button == null ? controlAt(event.x, event.y) : null;
+					if (button != null) button.press();
+					points.set(event.id, {
+						id: event.id,
+						x: event.x,
+						y: event.y,
+						startX: event.x,
+						startY: event.y,
+						lastY: event.y,
+						time: FlxG.game.ticks,
+						button: button,
+						control: control,
+						dragging: false,
+						beganThisFrame: true
+					});
 
-			var start:TouchStart = starts.get(id);
-			if (start == null) continue;
-			activeIds.push(id);
-
-			if (start.control != null)
-			{
-				if (touch.pressed && !heldControls.contains(start.control)) heldControls.push(start.control);
-				if (touch.justReleased)
-				{
-					if (overlapsScreen(start.control, x, y)) tappedControls.push(start.control);
-					starts.remove(id);
-				}
-				continue;
-			}
-
-			if (touch.pressed && start.button == null)
-			{
-				if (!start.dragging && Math.abs(y - start.y) > TAP_DISTANCE) start.dragging = true;
-				if (start.dragging)
-				{
-					dragY += y - start.lastY;
-					dragging = true;
-				}
-				start.lastY = y;
-
-				if (hitboxEnabled)
-				{
-					var lane:Int = Std.int(x / (FlxG.width / LANES));
-					if (lane < 0) lane = 0;
-					if (lane >= LANES) lane = LANES - 1;
-					lanePressed[lane] = true;
-				}
-			}
-
-			if (touch.justReleased)
-			{
-				starts.remove(id);
-				if (start.button != null)
-				{
-					if (buttonEnabled(start.button) && overlapsScreen(start.button, x, y))
+				case MOVE:
+					var point:TouchPoint = points.get(event.id);
+					if (point == null) continue;
+					point.x = event.x;
+					point.y = event.y;
+					if (point.button == null && point.control == null)
 					{
-						if (start.button.key == 'pause') pauseTap = true;
-						else backTap = true;
+						if (!point.dragging && Math.abs(point.y - point.startY) > DRAG_DISTANCE) point.dragging = true;
+						if (point.dragging)
+						{
+							dragY += point.y - point.lastY;
+							dragging = true;
+						}
+						point.lastY = point.y;
 					}
-					continue;
-				}
 
-				var dx:Float = x - start.x;
-				var dy:Float = y - start.y;
-				var distance:Float = Math.sqrt(dx * dx + dy * dy);
-				if (distance >= SWIPE_DISTANCE)
-				{
-					if (Math.abs(dx) > Math.abs(dy))
-					{
-						if (dx > 0) swipeRight = true;
-						else swipeLeft = true;
-					}
-					else
-					{
-						if (dy > 0) swipeDown = true;
-						else swipeUp = true;
-					}
-				}
-				else if (distance <= TAP_DISTANCE && FlxG.game.ticks - start.time <= TAP_TIME)
-				{
-					tap = true;
-					tapX = x;
-					tapY = y;
-				}
+				case END:
+					var point:TouchPoint = points.get(event.id);
+					if (point == null) continue;
+					points.remove(event.id);
+					point.x = event.x;
+					point.y = event.y;
+					release(point);
 			}
 		}
 
-		for (id in [for (key in starts.keys()) key])
-			if (!activeIds.contains(id)) starts.remove(id);
+		for (point in points)
+		{
+			if (point.control != null)
+			{
+				if (!heldControls.contains(point.control)) heldControls.push(point.control);
+				continue;
+			}
+			if (point.button != null) continue;
+			if (point.dragging) dragging = true;
+			if (hitboxEnabled) lanePressed[laneAt(point.x)] = true;
+		}
 
 		#if android
 		if (FlxG.android.justReleased.BACK) backTap = pauseTap = true;
 		#end
+	}
+
+	static function release(point:TouchPoint)
+	{
+		if (point.control != null)
+		{
+			if (overlapsScreen(point.control, point.x, point.y, null, 10)) tappedControls.push(point.control);
+			return;
+		}
+
+		if (point.button != null)
+		{
+			if (buttonEnabled(point.button) && overlapsScreen(point.button, point.x, point.y, null, 20))
+			{
+				tappedButtons.push(point.button);
+				if (point.button.key == 'pause') pauseTap = true;
+				else backTap = true;
+			}
+			return;
+		}
+
+		if (hitboxEnabled && point.beganThisFrame)
+			lanePressed[laneAt(point.startX)] = true;
+
+		var dx:Float = point.x - point.startX;
+		var dy:Float = point.y - point.startY;
+		var distance:Float = Math.sqrt(dx * dx + dy * dy);
+		if (distance >= SWIPE_DISTANCE)
+		{
+			if (Math.abs(dx) > Math.abs(dy))
+			{
+				if (dx > 0) swipeRight = true;
+				else swipeLeft = true;
+			}
+			else
+			{
+				if (dy > 0) swipeDown = true;
+				else swipeUp = true;
+			}
+		}
+		else if (distance <= TAP_DISTANCE)
+		{
+			tap = true;
+			tapX = point.x;
+			tapY = point.y;
+		}
 	}
 }
