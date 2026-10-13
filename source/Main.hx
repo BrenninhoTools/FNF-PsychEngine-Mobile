@@ -79,7 +79,7 @@ class Main extends Sprite
 		#if android
 		Sys.setCwd(Path.addTrailingSlash(Context.getExternalFilesDir()));
 		#elseif ios
-		Sys.setCwd(lime.system.System.applicationStorageDirectory);
+		Sys.setCwd(Path.addTrailingSlash(lime.system.System.documentsDirectory));
 		#end
 		#if VIDEOS_ALLOWED
 		hxvlc.util.Handle.init(#if (hxvlc >= "1.8.0")  ['--no-lua'] #end);
