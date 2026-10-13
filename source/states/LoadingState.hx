@@ -343,13 +343,19 @@ class LoadingState extends MusicBeatState
 
 	public static function checkLoaded():Bool
 	{
+		if (mutex != null) mutex.acquire();
+		var cachedAny:Bool = false;
 		for (key => bitmap in requestedBitmaps)
 		{
-			if (bitmap != null && Paths.cacheBitmap(originalBitmapKeys.get(key), bitmap) != null) {} //trace('finished preloading image $key');
+			if (bitmap != null && Paths.cacheBitmap(originalBitmapKeys.get(key), bitmap) != null) cachedAny = true;
 			else trace('failed to cache image $key');
 		}
 		requestedBitmaps.clear();
 		originalBitmapKeys.clear();
+		if (mutex != null) mutex.release();
+		#if mobile
+		if (cachedAny) cpp.vm.Gc.run(true);
+		#end
 		// trace('we checked if loaded');
 		return (loaded >= loadMax && initialThreadCompleted);
 	}
@@ -410,7 +416,9 @@ class LoadingState extends MusicBeatState
 	static var dontPreloadDefaultVoices:Bool = false;
 	static function _startPool()
 	{
-		#if MULTITHREADED_LOADING
+		#if (MULTITHREADED_LOADING && mobile)
+		var threadCount:Int = Std.int(Math.max(1, Math.min(2, getCPUThreadsCount() - 1)));
+		#elseif MULTITHREADED_LOADING
 		// Due to the Main thread and Discord thread, we decrease it by 2.
 		var threadCount:Int = Std.int(Math.max(1, getCPUThreadsCount() - #if DISCORD_ALLOWED 2 #else 1 #end));
 		#else

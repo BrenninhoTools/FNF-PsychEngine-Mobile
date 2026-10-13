@@ -23,7 +23,7 @@ import states.TitleState;
 	public var splashAlpha:Float = 0.6;
 	public var lowQuality:Bool = false;
 	public var shaders:Bool = true;
-	public var cacheOnGPU:Bool = #if !switch false #else true #end; // GPU Caching made by Raltyro
+	public var cacheOnGPU:Bool = #if (switch || mobile) true #else false #end; // GPU Caching made by Raltyro
 	public var framerate:Int = 60;
 	public var camZooms:Bool = true;
 	public var hideHud:Bool = false;
@@ -179,6 +179,16 @@ class ClientPrefs {
 		for (key in Reflect.fields(data))
 			if (key != 'gameplaySettings' && Reflect.hasField(FlxG.save.data, key))
 				Reflect.setField(data, key, Reflect.field(FlxG.save.data, key));
+
+		#if mobile
+		if (FlxG.save.data.mobileGpuCacheDefault == null)
+		{
+			data.cacheOnGPU = true;
+			FlxG.save.data.mobileGpuCacheDefault = true;
+			FlxG.save.data.cacheOnGPU = true;
+			FlxG.save.flush();
+		}
+		#end
 		
 		if(Main.fpsVar != null)
 			Main.fpsVar.visible = data.showFPS;

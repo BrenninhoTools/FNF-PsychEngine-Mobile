@@ -128,7 +128,7 @@ class MainMenuState extends MusicBeatState
 		#if mobile
 		var backButton:mobile.MobileButton = mobile.MobileButton.back(null, true);
 		add(backButton);
-		editorsButton = new mobile.TouchButton(backButton.x - 176, backButton.y + (backButton.height - 46) / 2, Language.getPhrase('mainmenu_editors', 'EDITORS'));
+		editorsButton = new mobile.TouchButton(16, 60, Language.getPhrase('mainmenu_editors', 'EDITORS'));
 		add(editorsButton);
 		#end
 	}
