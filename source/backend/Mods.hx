@@ -228,6 +228,9 @@ class Mods
 
 	public static function loadTopMod()
 	{
+		#if mobile
+		Paths.clearModPathCache();
+		#end
 		Mods.currentModDirectory = '';
 		
 		#if MODS_ALLOWED

@@ -35,6 +35,13 @@ jobs:
           chmod +x ./setup/unix.sh
           sh ./setup/unix.sh
 
+      - name: Update Android LuaJIT Libraries
+        run: |
+          git clone https://github.com/HomuHomu833/linc_luajit /tmp/linc_luajit_mobile
+          git -C /tmp/linc_luajit_mobile checkout 4eef1dcb383acc270923f8009c046caa42a4b3b5
+          LUA_PATH=$(haxelib libpath linc_luajit)
+          cp /tmp/linc_luajit_mobile/lib/lua/lib/Android/*.a "$LUA_PATH/lib/lua/lib/Android/"
+
       - name: Configure Android
         run: |
           haxelib run lime config ANDROID_SDK $ANDROID_HOME

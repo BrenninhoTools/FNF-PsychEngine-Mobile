@@ -29,6 +29,19 @@ class ErrorHandledShader extends FlxShader implements IErrorHandler
 		}
 	}
 	
+	public static function fixSource(source:String):String
+	{
+		if (source == null) return null;
+		#if mobile
+		var lines:Array<String> = [];
+		for (line in source.split('\n'))
+			if (!StringTools.trim(line).startsWith('#version')) lines.push(line);
+		source = lines.join('\n');
+		source = ~/\btexture\s*\(/g.replace(source, 'texture2D(');
+		#end
+		return source;
+	}
+
 	public static function crashSave(shaderName:String, error:Dynamic, onError:Dynamic) // prevent the app from dying immediately
 	{
 		if(shaderName == null) shaderName = 'unnamed';
@@ -62,7 +75,7 @@ class ErrorHandledRuntimeShader extends FlxRuntimeShader implements IErrorHandle
 	public function new(?shaderName:String, ?fragmentSource:String, ?vertexSource:String)
 	{
 		this.shaderName = shaderName;
-		super(fragmentSource, vertexSource);
+		super(ErrorHandledShader.fixSource(fragmentSource), ErrorHandledShader.fixSource(vertexSource));
 	}
 
 	override function __createGLProgram(vertexSource:String, fragmentSource:String):GLProgram

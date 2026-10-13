@@ -75,6 +75,7 @@ class Main extends Sprite
 		// Credits to MAJigsaw77 (he's the og author for this code)
 		#if mobile
 		mobile.StorageUtil.applyGameDir();
+		mobile.NativeCrash.install();
 		#end
 		#if VIDEOS_ALLOWED
 		hxvlc.util.Handle.init(#if (hxvlc >= "1.8.0")  ['--no-lua'] #end);
@@ -157,6 +158,7 @@ class Main extends Sprite
 		addChild(new FlxGame(game.width, game.height, initialState, game.framerate, game.framerate, game.skipSplash, game.startFullscreen));
 		#if mobile
 		mobile.TouchInput.init();
+		mobile.NativeCrash.reportPrevious();
 		#end
 
 		fpsVar = new FPSCounter(10, 3, 0xFFFFFF);
@@ -186,6 +188,9 @@ class Main extends Sprite
 		
 		#if CRASH_HANDLER
 		Lib.current.loaderInfo.uncaughtErrorEvents.addEventListener(UncaughtErrorEvent.UNCAUGHT_ERROR, onCrash);
+		#if cpp
+		untyped __global__.__hxcpp_set_critical_error_handler(onCriticalError);
+		#end
 		#end
 
 		#if DISCORD_ALLOWED
@@ -230,6 +235,13 @@ class Main extends Sprite
 
 	// Code was entirely made by sqirra-rng for their fnf engine named "Izzy Engine", big props to them!!!
 	// very cool person for real they don't get enough credit for their work
+	#if (CRASH_HANDLER && cpp)
+	static function onCriticalError(message:Dynamic):Void
+	{
+		throw Std.string(message);
+	}
+	#end
+
 	#if CRASH_HANDLER
 	function onCrash(e:UncaughtErrorEvent):Void
 	{

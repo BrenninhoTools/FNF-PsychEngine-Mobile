@@ -309,10 +309,10 @@ class Paths
 			if(parentFolder == 'songs') modKey = 'songs/$key';
 
 			for(mod in Mods.getGlobalMods())
-				if (FileSystem.exists(mods('$mod/$modKey')))
+				if (resolveModPath(mods('$mod/$modKey')) != null)
 					return true;
 
-			if (FileSystem.exists(mods(Mods.currentModDirectory + '/' + modKey)) || FileSystem.exists(mods(modKey)))
+			if (resolveModPath(mods(Mods.currentModDirectory + '/' + modKey)) != null || resolveModPath(mods(modKey)) != null)
 				return true;
 		}
 		#end
@@ -487,18 +487,88 @@ class Paths
 	{
 		if(Mods.currentModDirectory != null && Mods.currentModDirectory.length > 0)
 		{
-			var fileToCheck:String = mods(Mods.currentModDirectory + '/' + key);
-			if(FileSystem.exists(fileToCheck))
+			var fileToCheck:String = resolveModPath(mods(Mods.currentModDirectory + '/' + key));
+			if(fileToCheck != null)
 				return fileToCheck;
 		}
 
 		for(mod in Mods.getGlobalMods())
 		{
-			var fileToCheck:String = mods(mod + '/' + key);
-			if(FileSystem.exists(fileToCheck))
+			var fileToCheck:String = resolveModPath(mods(mod + '/' + key));
+			if(fileToCheck != null)
 				return fileToCheck;
 		}
-		return mods(key);
+
+		var rootFile:String = resolveModPath(mods(key));
+		return rootFile != null ? rootFile : mods(key);
+	}
+
+	#if mobile
+	static var _dirCache:Map<String, Array<String>> = new Map();
+	static var _dirMutex:sys.thread.Mutex = new sys.thread.Mutex();
+
+	public static function clearModPathCache()
+	{
+		_dirMutex.acquire();
+		_dirCache.clear();
+		_dirMutex.release();
+	}
+
+	static function listDirectory(dir:String):Array<String>
+	{
+		_dirMutex.acquire();
+		var entries:Array<String> = _dirCache.get(dir);
+		_dirMutex.release();
+		if (entries != null) return entries;
+
+		try
+		{
+			if (!FileSystem.exists(dir) || !FileSystem.isDirectory(dir)) return null;
+			entries = FileSystem.readDirectory(dir);
+		}
+		catch (e:Dynamic)
+		{
+			return null;
+		}
+
+		_dirMutex.acquire();
+		_dirCache.set(dir, entries);
+		_dirMutex.release();
+		return entries;
+	}
+	#end
+
+	public static function resolveModPath(path:String):String
+	{
+		if (FileSystem.exists(path)) return path;
+		#if mobile
+		var root:String = mods();
+		if (!path.startsWith(root)) return null;
+
+		var current:String = root.substr(0, root.length - 1);
+		for (part in path.substr(root.length).split('/'))
+		{
+			if (part.length == 0) continue;
+			var entries:Array<String> = listDirectory(current);
+			if (entries == null) return null;
+
+			var lower:String = part.toLowerCase();
+			var match:String = null;
+			for (entry in entries)
+			{
+				if (entry.toLowerCase() == lower)
+				{
+					match = entry;
+					break;
+				}
+			}
+			if (match == null) return null;
+			current += '/' + match;
+		}
+		return path.endsWith('/') ? current + '/' : current;
+		#else
+		return null;
+		#end
 	}
 	#end
 
