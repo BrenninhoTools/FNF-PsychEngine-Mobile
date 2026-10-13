@@ -24,6 +24,7 @@ import states.TitleState;
 	public var lowQuality:Bool = false;
 	public var shaders:Bool = true;
 	public var cacheOnGPU:Bool = #if (switch || mobile) true #else false #end; // GPU Caching made by Raltyro
+	public var fpsRework:Bool = false;
 	public var framerate:Int = 60;
 	public var camZooms:Bool = true;
 	public var hideHud:Bool = false;
@@ -202,15 +203,20 @@ class ClientPrefs {
 		}
 		#end
 
-		if(data.framerate > FlxG.drawFramerate)
-		{
-			FlxG.updateFramerate = data.framerate;
-			FlxG.drawFramerate = data.framerate;
-		}
+		if (data.fpsRework)
+			FlxG.stage.window.frameRate = data.framerate;
 		else
 		{
-			FlxG.drawFramerate = data.framerate;
-			FlxG.updateFramerate = data.framerate;
+			if (data.framerate > FlxG.drawFramerate)
+			{
+				FlxG.updateFramerate = data.framerate;
+				FlxG.drawFramerate = data.framerate;
+			}
+			else
+			{
+				FlxG.drawFramerate = data.framerate;
+				FlxG.updateFramerate = data.framerate;
+			}
 		}
 
 		if(FlxG.save.data.gameplaySettings != null)

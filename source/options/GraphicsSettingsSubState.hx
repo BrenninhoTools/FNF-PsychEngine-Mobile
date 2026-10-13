@@ -60,6 +60,12 @@ class GraphicsSettingsSubState extends BaseOptionsMenu
 		option.onChange = onChangeFramerate;
 		#end
 
+		option = new Option('FPS Rework',
+			"If checked, this works around the game becoming \"slow\" and \"smooth\" when the current FPS is lower than the FPS cap.",
+			'fpsRework',
+			BOOL);
+		addOption(option);
+
 		super();
 		insert(1, boyfriend);
 	}
@@ -79,13 +85,23 @@ class GraphicsSettingsSubState extends BaseOptionsMenu
 	{
 		if(ClientPrefs.data.framerate > FlxG.drawFramerate)
 		{
-			FlxG.updateFramerate = ClientPrefs.data.framerate;
-			FlxG.drawFramerate = ClientPrefs.data.framerate;
+			if (ClientPrefs.data.fpsRework)
+				FlxG.stage.window.frameRate = ClientPrefs.data.framerate;
+			else
+			{
+				FlxG.updateFramerate = ClientPrefs.data.framerate;
+				FlxG.drawFramerate = ClientPrefs.data.framerate;
+			}
 		}
 		else
 		{
-			FlxG.drawFramerate = ClientPrefs.data.framerate;
-			FlxG.updateFramerate = ClientPrefs.data.framerate;
+			if (ClientPrefs.data.fpsRework)
+				FlxG.stage.window.frameRate = ClientPrefs.data.framerate;
+			else
+			{
+				FlxG.drawFramerate = ClientPrefs.data.framerate;
+				FlxG.updateFramerate = ClientPrefs.data.framerate;
+			}
 		}
 	}
 
