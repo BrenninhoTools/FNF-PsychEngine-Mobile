@@ -27,9 +27,3 @@ art/build_html.bat
 art/build_html-debug.bat
 
 release.keystore
-project/discord/include/
-project/discord/android/
-project/discord/ios/
-project/android/psychmobile/libs/
-project/android/psychmobile/src/main/jniLibs/
-discord_sdk.zip

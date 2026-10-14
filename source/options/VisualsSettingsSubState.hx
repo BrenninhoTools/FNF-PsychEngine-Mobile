@@ -150,17 +150,6 @@ class VisualsSettingsSubState extends BaseOptionsMenu
 			'discordRPC',
 			BOOL);
 		addOption(option);
-		#if android
-		option.description = 'Shows what you are playing on Discord.\nNeeds the Discord app installed and logged in on this device.';
-		option.onChange = () -> DiscordClient.check();
-		#elseif ios
-		option.description = 'Shows what you are playing on Discord.\nTurning it on opens the Discord login the first time.';
-		option.onChange = function()
-		{
-			DiscordClient.check();
-			if (ClientPrefs.data.discordRPC) DiscordClient.login();
-		};
-		#end
 		#end
 
 		var option:Option = new Option('Combo Stacking',

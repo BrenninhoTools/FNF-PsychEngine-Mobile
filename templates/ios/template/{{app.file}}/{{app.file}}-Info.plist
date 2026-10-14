@@ -64,20 +64,5 @@
 	<true/>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
-	::if (ENV_PSYCH_DISCORD_APP_ID != null)::<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleURLName</key>
-			<string>::APP_PACKAGE::.discord</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>discord-::ENV_PSYCH_DISCORD_APP_ID::</string>
-			</array>
-		</dict>
-	</array>
-	<key>LSApplicationQueriesSchemes</key>
-	<array>
-		<string>discord</string>
-	</array>::end::
 </dict>
 </plist>
