@@ -14,6 +14,7 @@ import states.TitleState;
 	public var showFPS:Bool = true;
 	public var hitboxVisible:Bool = true;
 	public var pauseButtonVisible:Bool = true;
+	public var pauseChartEditor:Bool = true;
 	public var storageType:String = 'Data';
 	public var flashing:Bool = true;
 	public var autoPause:Bool = true;

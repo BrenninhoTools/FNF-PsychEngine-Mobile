@@ -26,7 +26,7 @@ jobs:
 
       - uses: krdlab/setup-haxe@master
         with:
-          haxe-version: 4.3.4
+          haxe-version: 4.3.7
 
       - name: Install Haxelib
         run: |
@@ -50,27 +50,6 @@ jobs:
       - name: Skip SScript setup mode
         run: echo 'oy9:showMacroty8:loopCosti25y10:includeAllfg' >> ~/settings.cocoa
 
-      - name: Prepare Discord Social SDK
-        env:
-          DISCORD_SOCIAL_SDK_URL: ${{ secrets.DISCORD_SOCIAL_SDK_URL }}
-          DISCORD_SOCIAL_SDK_TOKEN: ${{ secrets.DISCORD_SOCIAL_SDK_TOKEN }}
-          DISCORD_APP_ID: ${{ secrets.DISCORD_APP_ID }}
-        run: |
-          if [ -z "$DISCORD_SOCIAL_SDK_URL" ]; then
-            echo "No DISCORD_SOCIAL_SDK_URL secret, building without Discord Rich Presence"
-            exit 0
-          fi
-          if [ -n "$DISCORD_SOCIAL_SDK_TOKEN" ]; then
-            curl -fsSL -H "Authorization: Bearer $DISCORD_SOCIAL_SDK_TOKEN" -H "Accept: application/octet-stream" -o discord_sdk.zip "$DISCORD_SOCIAL_SDK_URL"
-          else
-            curl -fsSL -o discord_sdk.zip "$DISCORD_SOCIAL_SDK_URL"
-          fi
-          sh ./setup/discord_sdk.sh android discord_sdk.zip
-          rm -f discord_sdk.zip
-          FLAG="-D DISCORD_SOCIAL_SDK"
-          if [ -n "$DISCORD_APP_ID" ]; then FLAG="$FLAG -D DISCORD_APP_ID=$DISCORD_APP_ID"; fi
-          echo "DISCORD_FLAG=$FLAG" >> $GITHUB_ENV
-
       - name: Prepare Signing Key
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -87,7 +66,7 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: haxelib run lime build android -D officialBuild $SIGNING_FLAG $DISCORD_FLAG
+        run: haxelib run lime build android -D officialBuild $SIGNING_FLAG
 
       - name: Verify APK
         run: |
@@ -115,18 +94,18 @@ jobs:
 
       - uses: krdlab/setup-haxe@master
         with:
-          haxe-version: 4.3.4
+          haxe-version: 4.3.7
 
       - name: Install Haxelib
         run: |
-          haxelib setup ~/haxelib
-          haxelib install hxcpp > /dev/null --quiet
+          arch -x86_64 haxelib setup ~/haxelib
+          arch -x86_64 haxelib install hxcpp > /dev/null --quiet
           chmod +x ./setup/unix.sh
-          sh ./setup/unix.sh
+          arch -x86_64 /bin/sh ./setup/unix.sh
 
       - name: Use Bundled Lua
         run: |
-          LUA_PATH=$(haxelib libpath linc_luajit)
+          LUA_PATH=$(arch -x86_64 haxelib libpath linc_luajit)
           mkdir -p "$LUA_PATH/lib/lua/lib/iPhone"
           printf '!<arch>\n' > "$LUA_PATH/lib/lua/lib/iPhone/libluajit.iphoneos-64.a"
           printf '!<arch>\n' > "$LUA_PATH/lib/lua/lib/iPhone/libluajit.iphonesim-64.a"
@@ -134,35 +113,22 @@ jobs:
       - name: Skip SScript setup mode
         run: echo 'oy9:showMacroty8:loopCosti25y10:includeAllfg' >> ~/settings.cocoa
 
-      - name: Prepare Discord Social SDK
-        env:
-          DISCORD_SOCIAL_SDK_URL: ${{ secrets.DISCORD_SOCIAL_SDK_URL }}
-          DISCORD_SOCIAL_SDK_TOKEN: ${{ secrets.DISCORD_SOCIAL_SDK_TOKEN }}
-          DISCORD_APP_ID: ${{ secrets.DISCORD_APP_ID }}
-        run: |
-          if [ -z "$DISCORD_SOCIAL_SDK_URL" ]; then
-            echo "No DISCORD_SOCIAL_SDK_URL secret, building without Discord Rich Presence"
-            exit 0
-          fi
-          if [ -n "$DISCORD_SOCIAL_SDK_TOKEN" ]; then
-            curl -fsSL -H "Authorization: Bearer $DISCORD_SOCIAL_SDK_TOKEN" -H "Accept: application/octet-stream" -o discord_sdk.zip "$DISCORD_SOCIAL_SDK_URL"
-          else
-            curl -fsSL -o discord_sdk.zip "$DISCORD_SOCIAL_SDK_URL"
-          fi
-          sh ./setup/discord_sdk.sh ios discord_sdk.zip
-          rm -f discord_sdk.zip
-          FLAG="-D DISCORD_SOCIAL_SDK"
-          if [ -n "$DISCORD_APP_ID" ]; then FLAG="$FLAG -D DISCORD_APP_ID=$DISCORD_APP_ID"; fi
-          echo "DISCORD_FLAG=$FLAG" >> $GITHUB_ENV
-
       - name: Compile
-        run: haxelib run lime build ios -D officialBuild $DISCORD_FLAG || echo "lime finished with errors, building the Xcode project without signing"
+        run: |
+          arch -x86_64 haxelib run lime build ios -D officialBuild 2>&1 | tee compile.log || true
+          if ! ls export/release/ios/*.xcodeproj > /dev/null 2>&1; then
+            echo "::error title=lime build ios::$(tail -n 60 compile.log | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')"
+            arch -x86_64 haxe -version 2>&1 | sed 's/^/::error title=haxe::/'
+            arch -x86_64 haxelib list 2>&1 | head -n 40 | awk '{printf "%s%%0A", $0}' | sed 's/^/::error title=haxelib list::/'
+            exit 1
+          fi
 
       - name: Build Xcode Project
         run: |
           cd export/release/ios
           PROJECT=$(find . -maxdepth 1 -name "*.xcodeproj" | head -n 1)
-          xcodebuild -project "$PROJECT" -configuration Release -sdk iphoneos CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" LD_RUNPATH_SEARCH_PATHS='$(inherited) @executable_path/Frameworks' build
+          if [ -z "$PROJECT" ]; then echo "The Xcode project was not generated, check the Compile step for the real error"; exit 1; fi
+          xcodebuild -project "$PROJECT" -configuration Release -sdk iphoneos CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
 
       - name: Package IPA
         run: |
@@ -170,11 +136,6 @@ jobs:
           if [ -z "$APP" ]; then echo "No .app found"; find export/release/ios -maxdepth 4; exit 1; fi
           mkdir -p ipa/Payload
           cp -R "$APP" ipa/Payload/
-          FRAMEWORK=$(find project/discord/ios -type d -name "discord_partner_sdk.framework" -path "*ios-arm64*" 2>/dev/null | grep -v simulator | head -n 1 || true)
-          if [ -n "$FRAMEWORK" ] && file "$FRAMEWORK/discord_partner_sdk" | grep -q "dynamically linked"; then
-            mkdir -p "ipa/Payload/$(basename "$APP")/Frameworks"
-            cp -R "$FRAMEWORK" "ipa/Payload/$(basename "$APP")/Frameworks/"
-          fi
           cd ipa && zip -qry ../PsychEngine.ipa Payload
 
       - name: Publish Artifact

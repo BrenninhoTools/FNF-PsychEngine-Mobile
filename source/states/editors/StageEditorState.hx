@@ -1659,10 +1659,32 @@ class StageEditorState extends MusicBeatState implements PsychUIEventHandler.Psy
 	}
 
 	var _makeNewSprite = null;
+	#if mobile
+	var pickingImage:Bool = false;
+	#end
 	public function loadImage(onNewSprite:String = null) {
 		if(_file != null) return;
 
 		_makeNewSprite = onNewSprite;
+		#if mobile
+		if (pickingImage) return;
+		pickingImage = true;
+		mobile.StageImageImport.pick(function(path:String)
+		{
+			pickingImage = false;
+			handleLoadedImage(path);
+		}, function(message:String)
+		{
+			pickingImage = false;
+			_makeNewSprite = null;
+			showOutput('Error: ' + message, true);
+		}, function()
+		{
+			pickingImage = false;
+			_makeNewSprite = null;
+		});
+		return;
+		#end
 		_file = new FileReference();
 		_file.addEventListener(#if desktop Event.SELECT #else Event.COMPLETE #end, onLoadComplete);
 		_file.addEventListener(Event.CANCEL, onLoadCancel);
@@ -1683,7 +1705,16 @@ class StageEditorState extends MusicBeatState implements PsychUIEventHandler.Psy
 		var fullPath:String = null;
 		@:privateAccess
 		if(_file.__path != null) fullPath = _file.__path;
+		_file = null;
+		handleLoadedImage(fullPath);
+		#else
+		trace('File couldn\'t be loaded! You aren\'t on Desktop, are you?');
+		#end
+	}
 
+	function handleLoadedImage(fullPath:String)
+	{
+		#if sys
 		function loadSprite(imageToLoad:String)
 		{
 			if(_makeNewSprite != null)

@@ -212,14 +212,15 @@ class FreeplayState extends MusicBeatState
 		add(backButton);
 
 		var buttonY:Float = bottomBG.y - 56;
-		resetButton = makeTouchButton(Language.getPhrase('freeplay_touch_reset', 'RESET'), backButton.x - 170, buttonY);
-		changersButton = makeTouchButton(Language.getPhrase('freeplay_touch_changers', 'MODIFIERS'), resetButton.x - 170, buttonY);
-		previewButton = makeTouchButton(Language.getPhrase('freeplay_touch_preview', 'LISTEN'), changersButton.x - 170, buttonY);
+		resetButton = makeTouchButton(Language.getPhrase('freeplay_touch_reset', 'RESET'), 'reset', backButton.x - 170, buttonY);
+		changersButton = makeTouchButton(Language.getPhrase('freeplay_touch_changers', 'MODIFIERS'), 'modifiers', resetButton.x - 170, buttonY);
+		previewButton = makeTouchButton(Language.getPhrase('freeplay_touch_preview', 'LISTEN'), 'listen', changersButton.x - 170, buttonY);
 	}
 
-	function makeTouchButton(label:String, x:Float, y:Float):mobile.TouchButton
+	function makeTouchButton(label:String, image:String, x:Float, y:Float):mobile.TouchButton
 	{
 		var button:mobile.TouchButton = new mobile.TouchButton(x, y, label);
+		button.useImage(Paths.image('mobile/freeplay/$image'));
 		add(button);
 		return button;
 	}
