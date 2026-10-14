@@ -11,6 +11,8 @@ class EditorPad extends FlxSpriteGroup
 	static inline final MARGIN:Int = 8;
 
 	static final STICKY:Array<FlxKey> = [SHIFT, CONTROL, ALT];
+	static final DPAD_KEYS:Array<String> = ['LEFT', 'DOWN', 'UP', 'RIGHT'];
+	static final ACTION_KEYS:Array<String> = ['ESCAPE', 'ENTER', 'SPACE'];
 	static final LABELS:Map<String, String> = [
 		'ESCAPE' => 'ESC',
 		'CONTROL' => 'CTRL',
@@ -27,6 +29,7 @@ class EditorPad extends FlxSpriteGroup
 	public static var current(default, null):EditorPad;
 
 	var padCamera:FlxCamera;
+	var virtualPad:VirtualPad;
 	var toggleButton:TouchButton;
 	var keyButtons:Array<TouchButton> = [];
 	var keyCodes:Array<FlxKey> = [];
@@ -42,20 +45,40 @@ class EditorPad extends FlxSpriteGroup
 		padCamera.bgColor.alpha = 0;
 		FlxG.cameras.add(padCamera, false);
 
-		toggleButton = new TouchButton(MARGIN, FlxG.height - KEY_HEIGHT - MARGIN, 'KEYS', KEY_WIDTH + 10, KEY_HEIGHT, 18);
+		var names:Array<String> = [for (row in rows) for (name in row.split(' ')) name];
+		var hasDpad:Bool = false;
+		for (name in DPAD_KEYS) if (names.contains(name)) hasDpad = true;
+		var actions:Array<FlxKey> = [for (name in ACTION_KEYS) if (names.contains(name)) FlxKey.fromString(name)];
+
+		virtualPad = new VirtualPad(hasDpad, actions);
+		virtualPad.onKey = setKey;
+		add(virtualPad);
+
+		var keyRows:Array<Array<String>> = [];
+		for (row in rows)
+		{
+			var keys:Array<String> = [for (name in row.split(' ')) if (name.length > 0 && !(hasDpad && DPAD_KEYS.contains(name)) && !ACTION_KEYS.contains(name)) name];
+			if (keys.length > 0) keyRows.push(keys);
+		}
+
+		var toggleWidth:Int = KEY_WIDTH + 10;
+		toggleButton = new TouchButton((FlxG.width - toggleWidth) / 2, FlxG.height - KEY_HEIGHT - MARGIN, 'KEYS', toggleWidth, KEY_HEIGHT, 18);
+		toggleButton.visible = keyRows.length > 0;
 		add(toggleButton);
 
-		for (rowIndex in 0...rows.length)
+		for (rowIndex in 0...keyRows.length)
 		{
-			var names:Array<String> = rows[rowIndex].split(' ');
-			var y:Float = FlxG.height - MARGIN - (KEY_HEIGHT + GAP) * (rows.length - rowIndex + 1);
-			for (column in 0...names.length)
+			var keys:Array<String> = keyRows[rowIndex];
+			var rowWidth:Float = keys.length * KEY_WIDTH + (keys.length - 1) * GAP;
+			var startX:Float = (FlxG.width - rowWidth) / 2;
+			var y:Float = FlxG.height - MARGIN - (KEY_HEIGHT + GAP) * (keyRows.length - rowIndex + 1);
+			for (column in 0...keys.length)
 			{
-				var key:FlxKey = FlxKey.fromString(names[column]);
+				var key:FlxKey = FlxKey.fromString(keys[column]);
 				if (key == NONE) continue;
 
-				var label:String = LABELS.exists(names[column]) ? LABELS.get(names[column]) : names[column];
-				var button:TouchButton = new TouchButton(MARGIN + column * (KEY_WIDTH + GAP), y, label, KEY_WIDTH, KEY_HEIGHT, 18);
+				var label:String = LABELS.exists(keys[column]) ? LABELS.get(keys[column]) : keys[column];
+				var button:TouchButton = new TouchButton(startX + column * (KEY_WIDTH + GAP), y, label, KEY_WIDTH, KEY_HEIGHT, 18);
 				button.visible = false;
 				if (!STICKY.contains(key))
 				{
@@ -75,7 +98,9 @@ class EditorPad extends FlxSpriteGroup
 
 	public function setSuspended(suspended:Bool)
 	{
-		toggleButton.visible = !suspended;
+		toggleButton.visible = !suspended && keyButtons.length > 0;
+		virtualPad.visible = !suspended;
+		virtualPad.releaseAll();
 		for (button in keyButtons) button.visible = shown && !suspended;
 		for (key in heldKeys.copy()) setKey(key, false);
 		for (i in 0...keyButtons.length)
@@ -93,7 +118,7 @@ class EditorPad extends FlxSpriteGroup
 
 		super.update(elapsed);
 
-		if (toggleButton.justTapped)
+		if (toggleButton.visible && toggleButton.justTapped)
 		{
 			shown = !shown;
 			for (button in keyButtons) button.visible = shown;

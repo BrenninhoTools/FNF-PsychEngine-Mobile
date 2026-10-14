@@ -295,7 +295,7 @@ class ModsMenuState extends MusicBeatState
 
 		changeSelectedMod();
 		#if mobile
-		add(mobile.MobileButton.back());
+		add(mobile.MobileButton.back(null, true));
 		#end
 		super.create();
 	}
