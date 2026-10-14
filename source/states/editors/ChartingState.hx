@@ -3895,77 +3895,15 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			upperBox.isMinimized = true;
 			upperBox.bg.visible = false;
 
+			#if android
+			mobile.VSliceImport.pick(importVSliceChart, function(message:String) showOutput('Error: ' + message, true));
+			#else
 			fileDialog.open('chart.json', 'Open a V-Slice Chart file', function()
 			{
-				var chart:VSliceChart = cast Json.parse(fileDialog.data);
-				if(chart == null || chart.version == null || chart.notes == null || chart.scrollSpeed == null)
-				{
-					showOutput('Error: File loaded is not a valid FNF V-Slice chart.', true);
-					return;
-				}
-
-				fileDialog.open('metadata.json', 'Open a V-Slice Metadata file', function()
-				{
-					var metadata:VSliceMetadata = cast Json.parse(fileDialog.data);
-					if(metadata == null || metadata.version == null || metadata.playData == null || metadata.songName == null ||
-						metadata.playData.difficulties == null || metadata.timeChanges == null || metadata.timeChanges.length < 1)
-					{
-						showOutput('Error: File loaded is not a valid FNF V-Slice metadata.', true);
-						return;
-					}
-
-					try
-					{
-						var pack:PsychPackage = VSlice.convertToPsych(chart, metadata);
-						if(pack.difficulties != null)
-						{
-							fileDialog.openDirectory('Save Converted Psych JSONs', function()
-							{
-								var path:String = fileDialog.path.replace('\\', '/');
-								if(!path.endsWith('/')) path += '/';
-
-								var diffs:Array<String> = metadata.playData.difficulties.copy();
-								var defaultDiff:String = Paths.formatToSongPath(Difficulty.getDefault());
-								function nextChart()
-								{
-									while(diffs.length > 0)
-									{
-										var diffName:String = diffs[0];
-										diffs.remove(diffName);
-										if(!pack.difficulties.exists(diffName)) continue;
-		
-										var diffPostfix:String = (diffName != defaultDiff) ? '-$diffName' : '';
-										var chartData:SwagSong = pack.difficulties.get(diffName);
-										var chartName:String = Paths.formatToSongPath(chartData.song) + diffPostfix + '.json';
-										overwriteCheck(path + chartName, chartName, PsychJsonPrinter.print(chartData, ['sectionNotes', 'events']), nextChart, true);
-										return;
-									}
-	
-									if(pack.events != null)
-									{
-										overwriteCheck(path + 'events.json', 'events.json', PsychJsonPrinter.print(pack.events, ['events']), function()
-										{
-											if(overwriteSavedSomething)
-												showOutput('Files saved successfully to: ${fileDialog.path}!');
-										}, true);
-									}
-									else if(overwriteSavedSomething)
-										showOutput('Files saved successfully to: ${fileDialog.path}!');
-								}
-								
-								overwriteSavedSomething = false;
-								nextChart();
-							});
-						}
-						else showOutput('Error: No difficulties found.');
-					}
-					catch(e:Exception)
-					{
-						showOutput('Error: ${e.message}', true);
-						trace(e.stack);
-					}
-				});
+				var chartText:String = fileDialog.data;
+				fileDialog.open('metadata.json', 'Open a V-Slice Metadata file', function() importVSliceChart(chartText, fileDialog.data));
 			});
+			#end
 		},btnWid);
 		btn.text.alignment = LEFT;
 		tab_group.add(btn);
@@ -4556,6 +4494,75 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		}, btnWid);
 		btn.text.alignment = LEFT;
 		tab_group.add(btn);
+	}
+
+	function importVSliceChart(chartText:String, metadataText:String)
+	{
+		var chart:VSliceChart = cast Json.parse(chartText);
+		if(chart == null || chart.version == null || chart.notes == null || chart.scrollSpeed == null)
+		{
+			showOutput('Error: File loaded is not a valid FNF V-Slice chart.', true);
+			return;
+		}
+
+		var metadata:VSliceMetadata = cast Json.parse(metadataText);
+		if(metadata == null || metadata.version == null || metadata.playData == null || metadata.songName == null ||
+			metadata.playData.difficulties == null || metadata.timeChanges == null || metadata.timeChanges.length < 1)
+		{
+			showOutput('Error: File loaded is not a valid FNF V-Slice metadata.', true);
+			return;
+		}
+
+		try
+		{
+			var pack:PsychPackage = VSlice.convertToPsych(chart, metadata);
+			if(pack.difficulties != null)
+			{
+				fileDialog.openDirectory('Save Converted Psych JSONs', function()
+				{
+					var path:String = fileDialog.path.replace('\\', '/');
+					if(!path.endsWith('/')) path += '/';
+
+					var diffs:Array<String> = metadata.playData.difficulties.copy();
+					var defaultDiff:String = Paths.formatToSongPath(Difficulty.getDefault());
+					function nextChart()
+					{
+						while(diffs.length > 0)
+						{
+							var diffName:String = diffs[0];
+							diffs.remove(diffName);
+							if(!pack.difficulties.exists(diffName)) continue;
+		
+							var diffPostfix:String = (diffName != defaultDiff) ? '-$diffName' : '';
+							var chartData:SwagSong = pack.difficulties.get(diffName);
+							var chartName:String = Paths.formatToSongPath(chartData.song) + diffPostfix + '.json';
+							overwriteCheck(path + chartName, chartName, PsychJsonPrinter.print(chartData, ['sectionNotes', 'events']), nextChart, true);
+							return;
+						}
+	
+						if(pack.events != null)
+						{
+							overwriteCheck(path + 'events.json', 'events.json', PsychJsonPrinter.print(pack.events, ['events']), function()
+							{
+								if(overwriteSavedSomething)
+									showOutput('Files saved successfully to: ${fileDialog.path}!');
+							}, true);
+						}
+						else if(overwriteSavedSomething)
+							showOutput('Files saved successfully to: ${fileDialog.path}!');
+					}
+					
+					overwriteSavedSomething = false;
+					nextChart();
+				});
+			}
+			else showOutput('Error: No difficulties found.');
+		}
+		catch(e:Exception)
+		{
+			showOutput('Error: ${e.message}', true);
+			trace(e.stack);
+		}
 	}
 
 	function updateChartData()

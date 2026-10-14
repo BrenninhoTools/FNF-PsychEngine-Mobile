@@ -164,11 +164,13 @@ class MobileFileReference extends FileReference
 		if (status == WAITING || status == IDLE) return;
 
 		stopPolling();
+		var path:String = status == DONE && opening ? nativeResult() : null;
+		nativeReset();
+
 		if (status == DONE)
 		{
-			if (opening)
+			if (path != null)
 			{
-				var path:String = nativeResult();
 				@:privateAccess this.__path = path;
 				@:privateAccess this.name = Path.withoutDirectory(path);
 				try
@@ -183,6 +185,5 @@ class MobileFileReference extends FileReference
 			dispatchEvent(new Event(Event.CANCEL));
 		else
 			dispatchEvent(new IOErrorEvent(IOErrorEvent.IO_ERROR));
-		nativeReset();
 	}
 }
