@@ -92,9 +92,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4.1.7
 
-      - uses: krdlab/setup-haxe@master
-        with:
-          haxe-version: 4.3.7
+      - name: Install Haxe
+        run: |
+          brew update > /dev/null
+          brew install haxe
+          haxe -version
 
       - name: Install Haxelib
         run: |
@@ -120,6 +122,7 @@ jobs:
         run: |
           cd export/release/ios
           PROJECT=$(find . -maxdepth 1 -name "*.xcodeproj" | head -n 1)
+          if [ -z "$PROJECT" ]; then echo "The Xcode project was not generated, check the Compile step for the real error"; exit 1; fi
           xcodebuild -project "$PROJECT" -configuration Release -sdk iphoneos CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
 
       - name: Package IPA

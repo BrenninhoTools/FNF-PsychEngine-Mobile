@@ -63,6 +63,7 @@ class EditorPad extends FlxSpriteGroup
 
 		var toggleWidth:Int = KEY_WIDTH + 10;
 		toggleButton = new TouchButton((FlxG.width - toggleWidth) / 2, FlxG.height - KEY_HEIGHT - MARGIN, 'KEYS', toggleWidth, KEY_HEIGHT, 18);
+		toggleButton.useImage(keyImage('keys'));
 		toggleButton.visible = keyRows.length > 0;
 		add(toggleButton);
 
@@ -79,6 +80,7 @@ class EditorPad extends FlxSpriteGroup
 
 				var label:String = LABELS.exists(keys[column]) ? LABELS.get(keys[column]) : keys[column];
 				var button:TouchButton = new TouchButton(startX + column * (KEY_WIDTH + GAP), y, label, KEY_WIDTH, KEY_HEIGHT, 18);
+				button.useImage(keyImage(keys[column]));
 				button.visible = false;
 				if (!STICKY.contains(key))
 				{
@@ -94,6 +96,11 @@ class EditorPad extends FlxSpriteGroup
 		cameras = [padCamera];
 		TouchInput.blockGestures = true;
 		current = this;
+	}
+
+	static function keyImage(name:String):flixel.graphics.FlxGraphic
+	{
+		return Paths.image('mobile/virtualpad/keys/' + name.toLowerCase());
 	}
 
 	public function setSuspended(suspended:Bool)
