@@ -101,7 +101,7 @@ jobs:
       - name: Install Haxelib
         run: |
           haxelib setup ~/haxelib
-          haxelib install hxcpp > /dev/null --quiet
+          haxelib install hxcpp --quiet 2>&1 | tail -n 5
           chmod +x ./setup/unix.sh
           sh ./setup/unix.sh
 
@@ -116,7 +116,14 @@ jobs:
         run: echo 'oy9:showMacroty8:loopCosti25y10:includeAllfg' >> ~/settings.cocoa
 
       - name: Compile
-        run: haxelib run lime build ios -D officialBuild || echo "lime finished with errors, building the Xcode project without signing"
+        run: |
+          haxelib run lime build ios -D officialBuild 2>&1 | tee compile.log || true
+          if ! ls export/release/ios/*.xcodeproj > /dev/null 2>&1; then
+            echo "::error title=lime build ios::$(tail -n 60 compile.log | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')"
+            haxe -version 2>&1 | sed 's/^/::error title=haxe::/'
+            haxelib list 2>&1 | head -n 40 | awk '{printf "%s%%0A", $0}' | sed 's/^/::error title=haxelib list::/'
+            exit 1
+          fi
 
       - name: Build Xcode Project
         run: |
