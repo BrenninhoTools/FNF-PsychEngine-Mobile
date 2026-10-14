@@ -3895,7 +3895,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			upperBox.isMinimized = true;
 			upperBox.bg.visible = false;
 
-			#if android
+			#if mobile
 			mobile.VSliceImport.pick(importVSliceChart, function(message:String) showOutput('Error: ' + message, true));
 			#else
 			fileDialog.open('chart.json', 'Open a V-Slice Chart file', function()
