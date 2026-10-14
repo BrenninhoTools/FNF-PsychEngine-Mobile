@@ -26,10 +26,10 @@ class VirtualPad extends FlxSpriteGroup
 		{
 			var centerX:Float = MARGIN + DPAD_SIZE * 1.5;
 			var centerY:Float = FlxG.height - MARGIN - DPAD_SIZE * 1.5;
-			addButton(new VirtualPadButton(centerX - DPAD_SIZE / 2, centerY - DPAD_SIZE * 1.5, UP, arrowGraphic(-90)));
-			addButton(new VirtualPadButton(centerX - DPAD_SIZE / 2, centerY + DPAD_SIZE / 2, DOWN, arrowGraphic(90)));
-			addButton(new VirtualPadButton(centerX - DPAD_SIZE * 1.5, centerY - DPAD_SIZE / 2, LEFT, arrowGraphic(180)));
-			addButton(new VirtualPadButton(centerX + DPAD_SIZE / 2, centerY - DPAD_SIZE / 2, RIGHT, arrowGraphic(0)));
+			addButton(new VirtualPadButton(centerX - DPAD_SIZE / 2, centerY - DPAD_SIZE * 1.5, UP, DPAD_SIZE, image('up'), arrowGraphic(-90)));
+			addButton(new VirtualPadButton(centerX - DPAD_SIZE / 2, centerY + DPAD_SIZE / 2, DOWN, DPAD_SIZE, image('down'), arrowGraphic(90)));
+			addButton(new VirtualPadButton(centerX - DPAD_SIZE * 1.5, centerY - DPAD_SIZE / 2, LEFT, DPAD_SIZE, image('left'), arrowGraphic(180)));
+			addButton(new VirtualPadButton(centerX + DPAD_SIZE / 2, centerY - DPAD_SIZE / 2, RIGHT, DPAD_SIZE, image('right'), arrowGraphic(0)));
 		}
 
 		for (i in 0...actions.length)
@@ -41,7 +41,9 @@ class VirtualPad extends FlxSpriteGroup
 			if (column == 1) y -= ACTION_SIZE * 0.35;
 			var name:String = actions[i].toString();
 			var label:String = ACTION_LABELS.exists(name) ? ACTION_LABELS.get(name) : name;
-			addButton(new VirtualPadButton(x, y, actions[i], actionGraphic(ACTION_COLORS[i % ACTION_COLORS.length]), label));
+			var custom:FlxGraphic = image(name.toLowerCase());
+			if (custom != null) addButton(new VirtualPadButton(x, y, actions[i], ACTION_SIZE, custom));
+			else addButton(new VirtualPadButton(x, y, actions[i], ACTION_SIZE, null, actionGraphic(ACTION_COLORS[i % ACTION_COLORS.length]), label));
 		}
 
 		scrollFactor.set();
@@ -57,6 +59,11 @@ class VirtualPad extends FlxSpriteGroup
 	public function releaseAll()
 	{
 		for (button in buttons) button.release();
+	}
+
+	static function image(name:String):FlxGraphic
+	{
+		return Paths.image('mobile/virtualpad/$name');
 	}
 
 	static function arrowGraphic(angle:Int):FlxGraphic
@@ -128,15 +135,19 @@ class VirtualPadButton extends FlxSpriteGroup
 	var base:FlxSprite;
 	var text:FlxText;
 	var releaseQueued:Bool = false;
+	var baseScale:Float = 1;
 
-	public function new(x:Float, y:Float, key:FlxKey, graphic:FlxGraphic, ?label:String)
+	public function new(x:Float, y:Float, key:FlxKey, size:Int, graphic:FlxGraphic, ?fallback:FlxGraphic, ?label:String)
 	{
 		super(x, y);
 		this.key = key;
 
-		base = new FlxSprite().loadGraphic(graphic);
+		base = new FlxSprite().loadGraphic(graphic != null ? graphic : fallback);
+		base.setGraphicSize(size, size);
+		base.updateHitbox();
 		base.antialiasing = ClientPrefs.data.antialiasing;
 		add(base);
+		baseScale = base.scale.x;
 
 		if (label != null)
 		{
@@ -183,7 +194,8 @@ class VirtualPadButton extends FlxSpriteGroup
 		if (value == pressed) return;
 		pressed = value;
 		alpha = value ? PRESSED_ALPHA : IDLE_ALPHA;
-		base.scale.set(value ? 0.92 : 1, value ? 0.92 : 1);
+		var scale:Float = baseScale * (value ? 0.92 : 1);
+		base.scale.set(scale, scale);
 		if (onChange != null) onChange(value);
 	}
 
