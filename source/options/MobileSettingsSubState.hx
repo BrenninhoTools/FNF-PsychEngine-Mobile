@@ -23,6 +23,12 @@ class MobileSettingsSubState extends BaseOptionsMenu
 			BOOL);
 		addOption(option);
 
+		var option:Option = new Option('Chart Editor in Pause',
+			'If checked, the pause menu shows a "Chart Editor" option\nright after "Restart Song".',
+			'pauseChartEditor',
+			BOOL);
+		addOption(option);
+
 		#if android
 		ClientPrefs.data.storageType = mobile.StorageUtil.useExternal() ? 'External' : 'Data';
 		initialStorage = ClientPrefs.data.storageType;

@@ -47,6 +47,10 @@ class PauseSubState extends MusicBeatSubstate
 			menuItemsOG.insert(5 + num, 'Toggle Botplay');
 		} else if(PlayState.instance.practiceMode && !PlayState.instance.startingSong)
 			menuItemsOG.insert(3, 'Skip Time');
+		#if mobile
+		if(ClientPrefs.data.pauseChartEditor)
+			menuItemsOG.insert(menuItemsOG.indexOf('Restart Song') + 1, 'Chart Editor');
+		#end
 		menuItems = menuItemsOG;
 
 		for (i in 0...Difficulty.list.length) {
@@ -296,6 +300,11 @@ class PauseSubState extends MusicBeatSubstate
 					practiceText.visible = PlayState.instance.practiceMode;
 				case "Restart Song":
 					restartSong();
+				#if mobile
+				case 'Chart Editor':
+					PlayState.instance.canResync = false;
+					@:privateAccess PlayState.instance.openChartEditor();
+				#end
 				case "Leave Charting Mode":
 					restartSong();
 					PlayState.chartingMode = false;
