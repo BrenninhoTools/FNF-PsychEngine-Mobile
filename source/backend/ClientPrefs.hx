@@ -15,6 +15,7 @@ import states.TitleState;
 	public var hitboxVisible:Bool = true;
 	public var pauseButtonVisible:Bool = true;
 	public var pauseChartEditor:Bool = true;
+	public var screenStyle:String = 'Original';
 	public var storageType:String = 'Data';
 	public var flashing:Bool = true;
 	public var autoPause:Bool = true;
@@ -228,6 +229,7 @@ class ClientPrefs {
 			FlxG.sound.muted = FlxG.save.data.mute;
 
 		#if DISCORD_ALLOWED DiscordClient.check(); #end
+		#if mobile mobile.ScreenStyle.apply(); #end
 
 		// controls on a separate save file
 		var save:FlxSave = new FlxSave();

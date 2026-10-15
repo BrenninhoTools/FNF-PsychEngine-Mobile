@@ -29,6 +29,14 @@ class MobileSettingsSubState extends BaseOptionsMenu
 			BOOL);
 		addOption(option);
 
+		var option:Option = new Option('Screen Style:',
+			'Original: the classic 16:9 screen with black bars on wide phones.\nFull: stretches the game to fill the whole screen (20:9 and other wide phones).',
+			'screenStyle',
+			STRING,
+			['Original', 'Full']);
+		addOption(option);
+		option.onChange = mobile.ScreenStyle.apply;
+
 		#if android
 		ClientPrefs.data.storageType = mobile.StorageUtil.useExternal() ? 'External' : 'Data';
 		initialStorage = ClientPrefs.data.storageType;
