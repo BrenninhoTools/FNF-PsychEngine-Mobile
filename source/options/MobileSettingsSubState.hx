@@ -5,9 +5,11 @@ class MobileSettingsSubState extends BaseOptionsMenu
 	#if android
 	var initialStorage:String;
 	#end
+	var initialScreenStyle:String;
 
 	public function new()
 	{
+		initialScreenStyle = ClientPrefs.data.screenStyle;
 		title = Language.getPhrase('mobile_menu', 'Mobile Options');
 		rpcTitle = 'Mobile Options Menu';
 
@@ -30,7 +32,7 @@ class MobileSettingsSubState extends BaseOptionsMenu
 		addOption(option);
 
 		var option:Option = new Option('Screen Style:',
-			'Original: the classic 16:9 screen with black bars on wide phones.\nFull: stretches the game to fill the whole screen (20:9 and other wide phones).',
+			'Original: the classic 16:9 screen with black bars on wide phones.\nFull: fills the whole screen without stretching, showing more of the game on the sides.',
 			'screenStyle',
 			STRING,
 			['Original', 'Full']);
@@ -59,15 +61,14 @@ class MobileSettingsSubState extends BaseOptionsMenu
 			mobile.StorageUtil.requestAccess();
 	}
 
-	override function close()
+	function closeStorage():Bool
 	{
-		super.close();
-		if (ClientPrefs.data.storageType == initialStorage) return;
+		if (ClientPrefs.data.storageType == initialStorage) return false;
 
 		var oldDir:String = mobile.StorageUtil.getGameDir();
 		mobile.StorageUtil.setUseExternal(ClientPrefs.data.storageType == 'External');
 		ClientPrefs.saveSettings();
-		if (mobile.StorageUtil.getGameDir() == oldDir) return;
+		if (mobile.StorageUtil.getGameDir() == oldDir) return false;
 
 		mobile.StorageUtil.applyGameDir();
 		#if LUA_ALLOWED
@@ -79,7 +80,24 @@ class MobileSettingsSubState extends BaseOptionsMenu
 			FlxTransitionableState.skipNextTransIn = true;
 			FlxTransitionableState.skipNextTransOut = true;
 			FlxG.switchState(new mobile.CopyState());
+			return true;
 		}
+		return false;
 	}
 	#end
+
+	override function close()
+	{
+		super.close();
+		#if android
+		if (closeStorage()) return;
+		#end
+		if (ClientPrefs.data.screenStyle != initialScreenStyle)
+		{
+			ClientPrefs.saveSettings();
+			FlxTransitionableState.skipNextTransIn = true;
+			FlxTransitionableState.skipNextTransOut = true;
+			FlxG.resetState();
+		}
+	}
 }
