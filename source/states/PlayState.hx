@@ -1572,7 +1572,9 @@ class PlayState extends MusicBeatState
 					if(i > 1) { //Up and Right
 						babyArrow.x += FlxG.width / 2 + 25;
 					}
+					else babyArrow.x += mobile.WideScreen.offset;
 				}
+				else babyArrow.x += mobile.WideScreen.offset;
 				opponentStrums.add(babyArrow);
 			}
 

@@ -38,6 +38,7 @@ class MasterEditorMenu extends MusicBeatState
 		bg.scrollFactor.set();
 		bg.color = 0xFF353535;
 		add(bg);
+		mobile.WideScreen.fit(bg);
 
 		grpTexts = new FlxTypedGroup<Alphabet>();
 		add(grpTexts);

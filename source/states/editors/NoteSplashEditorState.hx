@@ -53,6 +53,7 @@ class NoteSplashEditorState extends MusicBeatState
         bg.scrollFactor.set();
         bg.color = 0xFF505050;
         add(bg);      
+        mobile.WideScreen.fit(bg);
 
         UI = new PsychUIBox(0, 0, 0, 0, ["Animation"]);
         UI.canMove = UI.canMinimize = false;

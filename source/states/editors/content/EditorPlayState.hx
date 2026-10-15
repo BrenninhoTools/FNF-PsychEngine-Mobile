@@ -100,6 +100,7 @@ class EditorPlayState extends MusicBeatSubstate
 		bg.color = 0xFF101010;
 		bg.alpha = 0.9;
 		add(bg);
+		mobile.WideScreen.fit(bg);
 		
 		/**** NOTES ****/
 		comboGroup = new FlxSpriteGroup();

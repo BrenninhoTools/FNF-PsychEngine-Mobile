@@ -65,6 +65,7 @@ class OptionsState extends MusicBeatState
 
 		bg.screenCenter();
 		add(bg);
+		mobile.WideScreen.fit(bg);
 
 		#if android
 		if (!showDataFolder()) options.remove('Open Data Folder');
