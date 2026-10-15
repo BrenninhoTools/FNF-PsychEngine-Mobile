@@ -27,7 +27,9 @@ class WideScaleMode extends BaseScaleMode
 	override function updateGameSize(Width:Int, Height:Int):Void
 	{
 		var ratio:Float = FlxG.width / FlxG.height;
-		if (Width / Height > ratio)
+		if (FlxG.width > FlxG.initialWidth)
+			gameSize.set(Width, Height);
+		else if (Width / Height > ratio)
 			gameSize.set(Math.ceil(Height * ratio), Height);
 		else
 			gameSize.set(Width, Math.ceil(Width / ratio));

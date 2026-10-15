@@ -8,7 +8,6 @@ class Hitbox extends FlxSpriteGroup
 {
 	static final COLORS:Array<FlxColor> = [0xFFC24B99, 0xFF00FFFF, 0xFF12FA05, 0xFFF9393F];
 	static inline final EDGE:Int = 4;
-	static inline final PRESSED_ALPHA:Float = 0.75;
 	static inline final FADE_OUT_SPEED:Float = 8;
 
 	var lanes:Array<FlxSprite> = [];
@@ -32,7 +31,7 @@ class Hitbox extends FlxSpriteGroup
 		laneGraphic.dispose();
 
 		scrollFactor.set();
-		visible = ClientPrefs.data.hitboxVisible;
+		visible = !ClientPrefs.data.hitboxInvisible;
 		TouchInput.hitboxEnabled = true;
 	}
 
@@ -54,7 +53,7 @@ class Hitbox extends FlxSpriteGroup
 		for (i in 0...lanes.length)
 		{
 			if (TouchInput.lanePressedAt(i))
-				lanes[i].alpha = PRESSED_ALPHA;
+				lanes[i].alpha = ClientPrefs.data.hitboxOpacity;
 			else if (lanes[i].alpha > 0)
 			{
 				lanes[i].alpha -= lanes[i].alpha * Math.min(1, elapsed * FADE_OUT_SPEED);

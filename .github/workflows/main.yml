@@ -13,10 +13,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  HXCPP_COMPILE_CACHE: ${{ github.workspace }}/../hxcpp_cache
-  HXCPP_CACHE_MB: 4000
-
 jobs:
   buildAndroid:
     runs-on: ubuntu-latest
@@ -49,13 +45,24 @@ jobs:
       - name: Restore hxcpp Cache
         uses: actions/cache@v4
         with:
-          path: ${{ github.workspace }}/../hxcpp_cache
+          path: ~/.hxcpp_cache
           key: hxcpp-android-${{ github.sha }}
           restore-keys: hxcpp-android-
 
+      - name: Restore Gradle Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('Project.xml', 'project/android/**/*.gradle') }}
+          restore-keys: gradle-
+
       - name: Install Haxelib
         run: |
-          mkdir -p "$HXCPP_COMPILE_CACHE"
+          mkdir -p ~/.hxcpp_cache
+          echo "HXCPP_COMPILE_CACHE=$HOME/.hxcpp_cache" >> $GITHUB_ENV
+          echo "::notice title=hxcpp cache (restored)::$(du -sh ~/.hxcpp_cache | cut -f1)"
           haxelib setup ~/haxelib
           if [ "${{ steps.haxelib-cache.outputs.cache-hit }}" != "true" ]; then
             haxelib install hxcpp > /dev/null --quiet
@@ -94,7 +101,9 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: haxelib run lime build android -D officialBuild $SIGNING_FLAG
+        run: |
+          haxelib run lime build android -D officialBuild $SIGNING_FLAG
+          echo "::notice title=hxcpp cache (after build)::$(du -sh ~/.hxcpp_cache | cut -f1)"
 
       - name: Verify APK
         run: |
@@ -134,13 +143,15 @@ jobs:
       - name: Restore hxcpp Cache
         uses: actions/cache@v4
         with:
-          path: ${{ github.workspace }}/../hxcpp_cache
+          path: ~/.hxcpp_cache
           key: hxcpp-ios-${{ github.sha }}
           restore-keys: hxcpp-ios-
 
       - name: Install Haxelib
         run: |
-          mkdir -p "$HXCPP_COMPILE_CACHE"
+          mkdir -p ~/.hxcpp_cache
+          echo "HXCPP_COMPILE_CACHE=$HOME/.hxcpp_cache" >> $GITHUB_ENV
+          echo "::notice title=hxcpp cache (restored)::$(du -sh ~/.hxcpp_cache | cut -f1)"
           arch -x86_64 haxelib setup ~/haxelib
           if [ "${{ steps.haxelib-cache.outputs.cache-hit }}" != "true" ]; then
             arch -x86_64 haxelib install hxcpp > /dev/null --quiet
@@ -174,6 +185,7 @@ jobs:
           PROJECT=$(find . -maxdepth 1 -name "*.xcodeproj" | head -n 1)
           if [ -z "$PROJECT" ]; then echo "The Xcode project was not generated, check the Compile step for the real error"; exit 1; fi
           xcodebuild -project "$PROJECT" -configuration Release -sdk iphoneos -arch arm64 ONLY_ACTIVE_ARCH=YES CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
+          echo "::notice title=hxcpp cache (after build)::$(du -sh ~/.hxcpp_cache | cut -f1)"
 
       - name: Package IPA
         run: |

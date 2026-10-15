@@ -13,15 +13,26 @@ class MobileSettingsSubState extends BaseOptionsMenu
 		title = Language.getPhrase('mobile_menu', 'Mobile Options');
 		rpcTitle = 'Mobile Options Menu';
 
-		var option:Option = new Option('Hitbox Visible',
-			'If unchecked, the hitbox lanes are hidden during gameplay.\nThey still work while hidden.',
-			'hitboxVisible',
+		var option:Option = new Option('Invisible Hitbox',
+			'If checked, the hitbox lanes are hidden during gameplay.\nThey still work while hidden.',
+			'hitboxInvisible',
 			BOOL);
 		addOption(option);
 
-		var option:Option = new Option('Pause Button Visible',
-			'If unchecked, the pause button is hidden during gameplay.\nYou can still tap its corner to pause.',
-			'pauseButtonVisible',
+		var option:Option = new Option('Hitbox Opacity',
+			'How visible the hitbox lanes are when you touch them.',
+			'hitboxOpacity',
+			PERCENT);
+		option.scrollSpeed = 1.6;
+		option.minValue = 0.1;
+		option.maxValue = 1;
+		option.changeValue = 0.05;
+		option.decimals = 2;
+		addOption(option);
+
+		var option:Option = new Option('Invisible Pause Button',
+			'If checked, the pause button is hidden during gameplay.\nYou can still tap its corner to pause.',
+			'pauseButtonInvisible',
 			BOOL);
 		addOption(option);
 
