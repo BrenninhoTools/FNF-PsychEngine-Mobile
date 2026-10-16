@@ -13,6 +13,17 @@ class MobileSettingsSubState extends BaseOptionsMenu
 		title = Language.getPhrase('mobile_menu', 'Mobile Options');
 		rpcTitle = 'Mobile Options Menu';
 
+		var option:Option = new Option('Mobile Controls',
+			'Preview and customize the hitbox: style, colors and opacity.',
+			null,
+			BUTTON);
+		option.onChange = function()
+		{
+			ClientPrefs.saveSettings();
+			MusicBeatState.switchState(new options.MobileControlsState());
+		};
+		addOption(option);
+
 		var option:Option = new Option('Invisible Hitbox',
 			'If checked, the hitbox lanes are hidden during gameplay.\nThey still work while hidden.',
 			'hitboxInvisible',

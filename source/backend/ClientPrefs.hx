@@ -14,6 +14,8 @@ import states.TitleState;
 	public var showFPS:Bool = true;
 	public var hitboxInvisible:Bool = false;
 	public var hitboxOpacity:Float = 0.75;
+	public var hitboxStyle:String = 'Gradient';
+	public var hitboxColors:String = 'Notes';
 	public var pauseButtonInvisible:Bool = false;
 	public var pauseChartEditor:Bool = true;
 	public var screenStyle:String = 'Original';

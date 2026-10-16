@@ -22,6 +22,7 @@ class OptionsState extends MusicBeatState
 	private static var curSelected:Int = 0;
 	public static var menuBG:FlxSprite;
 	public static var onPlayState:Bool = false;
+	public static var reopenMobileOptions:Bool = false;
 
 	function openSelectedSubstate(label:String) {
 		switch(label)
@@ -95,6 +96,17 @@ class OptionsState extends MusicBeatState
 		#end
 
 		super.create();
+
+		#if mobile
+		if (reopenMobileOptions)
+		{
+			reopenMobileOptions = false;
+			curSelected = options.indexOf('Mobile Options');
+			if (curSelected < 0) curSelected = 0;
+			changeSelection();
+			openSelectedSubstate('Mobile Options');
+		}
+		#end
 	}
 
 	#if android
