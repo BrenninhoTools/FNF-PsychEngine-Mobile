@@ -1,11 +1,18 @@
 package mobile;
 
+import haxe.io.Path;
 #if android
 import lime.system.JNI;
 #end
 
 class StorageUtil
 {
+	public static inline final DATA:String = 'Data';
+	public static inline final MEDIA:String = 'Media';
+	public static inline final EXTERNAL:String = 'External';
+	public static final TYPES:Array<String> = [DATA, MEDIA, EXTERNAL];
+	public static final FOLDERS:Array<String> = ['mods', 'crash', 'exports', 'screenshots'];
+
 	#if android
 	static inline final CLASS:String = 'org/psychengine/mobile/Storage';
 	static var jniCache:Map<String, Dynamic> = new Map();
@@ -23,22 +30,55 @@ class StorageUtil
 	{
 		#if android
 		var path:String = jni('getGameDirPath', '()Ljava/lang/String;')();
-		if (path != null && path.length > 0) return haxe.io.Path.addTrailingSlash(path);
-		return haxe.io.Path.addTrailingSlash(lime.system.System.applicationStorageDirectory);
+		if (path != null && path.length > 0) return Path.addTrailingSlash(path);
+		return Path.addTrailingSlash(lime.system.System.applicationStorageDirectory);
 		#elseif ios
-		return haxe.io.Path.addTrailingSlash(lime.system.System.documentsDirectory);
+		return Path.addTrailingSlash(lime.system.System.documentsDirectory);
 		#else
-		return haxe.io.Path.addTrailingSlash(Sys.getCwd());
+		return Path.addTrailingSlash(Sys.getCwd());
+		#end
+	}
+
+	public static function getDirFor(type:String):String
+	{
+		#if android
+		var path:String = jni('getDirPathFor', '(Ljava/lang/String;)Ljava/lang/String;')(type);
+		if (path != null && path.length > 0) return Path.addTrailingSlash(path);
+		#end
+		return getGameDir();
+	}
+
+	public static function getStorageType():String
+	{
+		#if android
+		var type:String = jni('getStorageType', '()Ljava/lang/String;')();
+		return TYPES.contains(type) ? type : DATA;
+		#else
+		return DATA;
+		#end
+	}
+
+	public static function setStorageType(type:String)
+	{
+		#if android
+		if (!TYPES.contains(type)) type = DATA;
+		jni('setStorageType', '(Ljava/lang/String;)V')(type);
 		#end
 	}
 
 	public static function useExternal():Bool
 	{
-		#if android
-		return jni('useExternal', '()Z')() == true;
-		#else
-		return false;
-		#end
+		return getStorageType() == EXTERNAL;
+	}
+
+	public static function setUseExternal(value:Bool)
+	{
+		setStorageType(value ? EXTERNAL : DATA);
+	}
+
+	public static function isAppOwned():Bool
+	{
+		return getStorageType() != EXTERNAL;
 	}
 
 	public static function hasAccess():Bool
@@ -57,16 +97,113 @@ class StorageUtil
 		#end
 	}
 
-	public static function setUseExternal(value:Bool)
+	public static function getFreeSpace():Float
 	{
 		#if android
-		jni('setUseExternal', '(Z)V')(value);
+		var value:Dynamic = jni('getFreeSpace', '()D')();
+		return value == null ? -1 : value;
+		#else
+		return -1;
 		#end
+	}
+
+	public static function formatSize(bytes:Float):String
+	{
+		if (bytes < 0) return '?';
+		var units:Array<String> = ['B', 'KB', 'MB', 'GB', 'TB'];
+		var unit:Int = 0;
+		while (bytes >= 1024 && unit < units.length - 1)
+		{
+			bytes /= 1024;
+			unit++;
+		}
+		return (Math.round(bytes * 10) / 10) + ' ' + units[unit];
+	}
+
+	public static function getInstallStamp():String
+	{
+		#if android
+		var stamp:String = jni('getInstallStamp', '()Ljava/lang/String;')();
+		if (stamp != null && stamp.length > 0) return stamp;
+		#elseif ios
+		try
+		{
+			return lime.app.Application.current.meta.get('version') + '-' + FileSystem.stat(lime.system.System.applicationDirectory).mtime.getTime();
+		}
+		catch (e:Dynamic) {}
+		#end
+		return lime.app.Application.current.meta.get('version');
+	}
+
+	public static function ensureFolders(?root:String)
+	{
+		if (root == null) root = getGameDir();
+		for (folder in FOLDERS)
+		{
+			try
+			{
+				var path:String = Path.addTrailingSlash(root) + folder;
+				if (!FileSystem.exists(path)) FileSystem.createDirectory(path);
+			}
+			catch (e:Dynamic) {}
+		}
+	}
+
+	public static function copyFolder(from:String, to:String, overwrite:Bool = false):Int
+	{
+		#if android
+		var count:Dynamic = jni('copyFolder', '(Ljava/lang/String;Ljava/lang/String;Z)I')(from, to, overwrite);
+		return count == null ? 0 : count;
+		#else
+		return copyFolderHaxe(from, to, overwrite);
+		#end
+	}
+
+	static function copyFolderHaxe(from:String, to:String, overwrite:Bool):Int
+	{
+		if (!FileSystem.exists(from)) return 0;
+		if (!FileSystem.isDirectory(from))
+		{
+			if (FileSystem.exists(to) && !overwrite) return 0;
+			var dir:String = Path.directory(to);
+			if (dir.length > 0 && !FileSystem.exists(dir)) FileSystem.createDirectory(dir);
+			File.copy(from, to);
+			return 1;
+		}
+		if (!FileSystem.exists(to)) FileSystem.createDirectory(to);
+		var count:Int = 0;
+		for (entry in FileSystem.readDirectory(from))
+			count += copyFolderHaxe(Path.join([from, entry]), Path.join([to, entry]), overwrite);
+		return count;
+	}
+
+	public static function migrate(fromDir:String, toDir:String):Int
+	{
+		if (fromDir == null || toDir == null || Path.addTrailingSlash(fromDir) == Path.addTrailingSlash(toDir)) return 0;
+		var count:Int = 0;
+		for (folder in ['mods', 'exports', 'screenshots'])
+		{
+			try
+			{
+				count += copyFolder(Path.addTrailingSlash(fromDir) + folder, Path.addTrailingSlash(toDir) + folder, false);
+			}
+			catch (e:Dynamic) {}
+		}
+		try
+		{
+			var list:String = Path.addTrailingSlash(fromDir) + 'modsList.txt';
+			var target:String = Path.addTrailingSlash(toDir) + 'modsList.txt';
+			if (FileSystem.exists(list)) File.copy(list, target);
+		}
+		catch (e:Dynamic) {}
+		return count;
 	}
 
 	public static function applyGameDir()
 	{
-		Sys.setCwd(getGameDir());
+		var dir:String = getGameDir();
+		ensureFolders(dir);
+		Sys.setCwd(dir);
 		#if mobile
 		Paths.resetModsRoot();
 		#end

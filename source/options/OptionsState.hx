@@ -111,7 +111,7 @@ class OptionsState extends MusicBeatState
 
 	#if android
 	static function showDataFolder():Bool
-		return !mobile.StorageUtil.useExternal();
+		return mobile.StorageUtil.isAppOwned();
 	#end
 
 	override function closeSubState()

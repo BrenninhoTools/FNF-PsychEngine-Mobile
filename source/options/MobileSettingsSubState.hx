@@ -62,13 +62,13 @@ class MobileSettingsSubState extends BaseOptionsMenu
 		option.onChange = mobile.ScreenStyle.apply;
 
 		#if android
-		ClientPrefs.data.storageType = mobile.StorageUtil.useExternal() ? 'External' : 'Data';
+		ClientPrefs.data.storageType = mobile.StorageUtil.getStorageType();
 		initialStorage = ClientPrefs.data.storageType;
 		var option:Option = new Option('Storage Type:',
-			'Data: files stay in the app folder and are deleted when the app is uninstalled.\nExternal: files go to /storage/emulated/0/.PsychEngine and stay after uninstalling.',
+			'Data: Android/data, deleted on uninstall. Media: Android/media, easier to reach\nwith file managers, deleted on uninstall. External: /storage/emulated/0/.PsychEngine, kept.',
 			'storageType',
 			STRING,
-			['Data', 'External']);
+			mobile.StorageUtil.TYPES);
 		addOption(option);
 		option.onChange = onChangeStorage;
 		#end
@@ -88,10 +88,13 @@ class MobileSettingsSubState extends BaseOptionsMenu
 		if (ClientPrefs.data.storageType == initialStorage) return false;
 
 		var oldDir:String = mobile.StorageUtil.getGameDir();
-		mobile.StorageUtil.setUseExternal(ClientPrefs.data.storageType == 'External');
+		mobile.StorageUtil.setStorageType(ClientPrefs.data.storageType);
 		ClientPrefs.saveSettings();
-		if (mobile.StorageUtil.getGameDir() == oldDir) return false;
+		var newDir:String = mobile.StorageUtil.getGameDir();
+		if (newDir == oldDir) return false;
 
+		mobile.StorageUtil.ensureFolders(newDir);
+		mobile.StorageUtil.migrate(oldDir, newDir);
 		mobile.StorageUtil.applyGameDir();
 		#if LUA_ALLOWED
 		Mods.pushGlobalMods();
