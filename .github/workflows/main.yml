@@ -102,7 +102,13 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          haxelib run lime build android -D officialBuild $SIGNING_FLAG
+          set -o pipefail
+          if ! haxelib run lime build android -D officialBuild $SIGNING_FLAG 2>&1 | tee compile.log; then
+            grep -n -i -E "error|failed|exception" compile.log | tail -n 40 > errors.log || true
+            echo "::error title=lime build android (errors)::$(sed 's/%/%25/g' errors.log | awk '{printf "%s%%0A", $0}')"
+            echo "::error title=lime build android (tail)::$(tail -n 60 compile.log | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')"
+            exit 1
+          fi
           echo "::notice title=hxcpp cache (after build)::$(du -sh ~/.hxcpp_cache | cut -f1)"
 
       - name: Verify APK
