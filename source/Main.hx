@@ -158,6 +158,7 @@ class Main extends Sprite
 		addChild(new FlxGame(game.width, game.height, initialState, game.framerate, game.framerate, game.skipSplash, game.startFullscreen));
 		#if mobile
 		mobile.TouchInput.init();
+		mobile.TouchCursor.init();
 		mobile.NativeCrash.reportPrevious();
 		#end
 

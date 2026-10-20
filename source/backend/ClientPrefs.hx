@@ -12,6 +12,8 @@ import states.TitleState;
 	public var middleScroll:Bool = false;
 	public var opponentStrums:Bool = true;
 	public var showFPS:Bool = true;
+	public var hitboxMode:String = 'Four Lanes';
+	public var touchCursor:Bool = true;
 	public var hitboxInvisible:Bool = false;
 	public var hitboxOpacity:Float = 0.75;
 	public var hitboxStyle:String = 'Gradient';

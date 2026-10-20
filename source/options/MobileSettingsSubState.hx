@@ -24,6 +24,19 @@ class MobileSettingsSubState extends BaseOptionsMenu
 		};
 		addOption(option);
 
+		var option:Option = new Option('Hitbox Mode:',
+			'Four Lanes: the screen is split into four touch lanes.\nArrows: tap the arrows at the bottom of the screen, opponent notes are hidden.',
+			'hitboxMode',
+			STRING,
+			['Four Lanes', 'Arrows']);
+		addOption(option);
+
+		var option:Option = new Option('Touch Cursor',
+			'If checked, a circle shows where your fingers are touching the screen.',
+			'touchCursor',
+			BOOL);
+		addOption(option);
+
 		var option:Option = new Option('Invisible Hitbox',
 			'If checked, the hitbox lanes are hidden during gameplay.\nThey still work while hidden.',
 			'hitboxInvisible',

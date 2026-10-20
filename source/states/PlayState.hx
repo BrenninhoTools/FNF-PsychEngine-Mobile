@@ -209,6 +209,9 @@ class PlayState extends MusicBeatState
 	public var camOther:FlxCamera;
 	#if mobile
 	public var hitbox:mobile.Hitbox;
+	public var arrowsMode:Bool = false;
+	var savedDownScroll:Null<Bool> = null;
+	static final ARROW_CENTERS:Array<Float> = [0.1, 0.3, 0.66, 0.88];
 	public var pauseButton:mobile.MobileButton;
 	#end
 	public var cameraSpeed:Float = 1;
@@ -272,6 +275,14 @@ class PlayState extends MusicBeatState
 	public static var nextReloadAll:Bool = false;
 	override public function create()
 	{
+		#if mobile
+		arrowsMode = ClientPrefs.data.hitboxMode == 'Arrows';
+		if (arrowsMode)
+		{
+			savedDownScroll = ClientPrefs.data.downScroll;
+			ClientPrefs.data.downScroll = true;
+		}
+		#end
 		//trace('Playback Rate: ' + playbackRate);
 		_lastLoadedModDirectory = Mods.currentModDirectory;
 		Paths.clearStoredMemory();
@@ -621,6 +632,7 @@ class PlayState extends MusicBeatState
 		#if mobile
 		hitbox = new mobile.Hitbox();
 		hitbox.cameras = [camOther];
+		if (arrowsMode) hitbox.visible = false;
 		add(hitbox);
 
 		pauseButton = mobile.MobileButton.pause(camOther);
@@ -983,6 +995,9 @@ class PlayState extends MusicBeatState
 			canPause = true;
 			generateStaticArrows(0);
 			generateStaticArrows(1);
+			#if mobile
+			if (arrowsMode) applyArrowsLayout();
+			#end
 			for (i in 0...playerStrums.length) {
 				setOnScripts('defaultPlayerStrumX' + i, playerStrums.members[i].x);
 				setOnScripts('defaultPlayerStrumY' + i, playerStrums.members[i].y);
@@ -1538,6 +1553,25 @@ class PlayState extends MusicBeatState
 	}
 
 	public var skipArrowStartTween:Bool = false; //for lua
+	#if mobile
+	function applyArrowsLayout()
+	{
+		var centers:Array<Float> = [];
+		for (i => strum in playerStrums.members)
+		{
+			if (strum == null) continue;
+			var center:Float = FlxG.width * ARROW_CENTERS[i % ARROW_CENTERS.length];
+			strum.x = center - strum.width / 2;
+			strum.y = FlxG.height - strum.height - 30;
+			strum.downScroll = true;
+			centers.push(center);
+		}
+		for (strum in opponentStrums.members)
+			if (strum != null) strum.visible = false;
+		mobile.TouchInput.laneCenters = centers;
+	}
+	#end
+
 	private function generateStaticArrows(player:Int):Void
 	{
 		var strumLineX:Float = ClientPrefs.data.middleScroll ? STRUM_X_MIDDLESCROLL : STRUM_X;
@@ -1548,7 +1582,7 @@ class PlayState extends MusicBeatState
 			var targetAlpha:Float = 1;
 			if (player < 1)
 			{
-				if(!ClientPrefs.data.opponentStrums) targetAlpha = 0;
+				if(!ClientPrefs.data.opponentStrums #if mobile || arrowsMode #end) targetAlpha = 0;
 				else if(ClientPrefs.data.middleScroll) targetAlpha = 0.35;
 			}
 
@@ -3160,6 +3194,13 @@ class PlayState extends MusicBeatState
 	}
 
 	override function destroy() {
+		#if mobile
+		if (savedDownScroll != null)
+		{
+			ClientPrefs.data.downScroll = savedDownScroll;
+			savedDownScroll = null;
+		}
+		#end
 		if (psychlua.CustomSubstate.instance != null)
 		{
 			closeSubState();

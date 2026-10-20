@@ -41,6 +41,7 @@ class TouchInput
 	static inline final END:Int = 2;
 
 	public static var hitboxEnabled:Bool = false;
+	public static var laneCenters:Array<Float> = null;
 	public static var blockGestures:Bool = false;
 	public static var tapX(default, null):Float = 0;
 	public static var tapY(default, null):Float = 0;
@@ -312,6 +313,21 @@ class TouchInput
 
 	static function laneAt(x:Float):Int
 	{
+		if (laneCenters != null && laneCenters.length > 0)
+		{
+			var nearest:Int = 0;
+			var best:Float = Math.POSITIVE_INFINITY;
+			for (i in 0...laneCenters.length)
+			{
+				var distance:Float = Math.abs(x - laneCenters[i]);
+				if (distance < best)
+				{
+					best = distance;
+					nearest = i;
+				}
+			}
+			return nearest < LANES ? nearest : LANES - 1;
+		}
 		var lane:Int = Std.int(x / (FlxG.width / LANES));
 		if (lane < 0) lane = 0;
 		if (lane >= LANES) lane = LANES - 1;
