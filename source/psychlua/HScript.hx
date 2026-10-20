@@ -156,7 +156,8 @@ class HScript extends Iris
 		set('FlxMath', flixel.math.FlxMath);
 		set('FlxSprite', flixel.FlxSprite);
 		set('FlxText', flixel.text.FlxText);
-		set('FlxCamera', flixel.FlxCamera);
+		crowplexus.iris.Iris.addProxyImport('flixel.FlxCamera', backend.PsychCamera);
+		set('FlxCamera', backend.PsychCamera);
 		set('PsychCamera', backend.PsychCamera);
 		set('FlxTimer', flixel.util.FlxTimer);
 		set('FlxTween', flixel.tweens.FlxTween);

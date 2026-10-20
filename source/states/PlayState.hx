@@ -327,8 +327,8 @@ class PlayState extends MusicBeatState
 		#if mobile
 		cast(camGame, backend.PsychCamera).wideZoom = true;
 		#end
-		camHUD = new FlxCamera();
-		camOther = new FlxCamera();
+		camHUD = new backend.PsychCamera();
+		camOther = new backend.PsychCamera();
 		camHUD.bgColor.alpha = 0;
 		camOther.bgColor.alpha = 0;
 

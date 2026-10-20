@@ -22,6 +22,16 @@ class PsychCamera extends FlxCamera
 		return value;
 	}
 
+	public function setFilters(?filters:Array<openfl.filters.BitmapFilter>):Void
+	{
+		this.filters = filters;
+	}
+
+	public function getFilters():Array<openfl.filters.BitmapFilter>
+	{
+		return filters;
+	}
+
 	override function set_zoom(value:Float):Float
 	{
 		var result:Float = super.set_zoom(value);
