@@ -12,9 +12,14 @@ import states.TitleState;
 	public var middleScroll:Bool = false;
 	public var opponentStrums:Bool = true;
 	public var showFPS:Bool = true;
-	public var hitboxVisible:Bool = true;
-	public var pauseButtonVisible:Bool = true;
+	public var hitboxInvisible:Bool = false;
+	public var hitboxOpacity:Float = 0.75;
+	public var hitboxStyle:String = 'Gradient';
+	public var hitboxColors:String = 'Notes';
+	public var hitboxRGB:Array<FlxColor> = [0xFFC24B99, 0xFF00FFFF, 0xFF12FA05, 0xFFF9393F];
+	public var pauseButtonInvisible:Bool = false;
 	public var pauseChartEditor:Bool = true;
+	public var screenStyle:String = 'Original';
 	public var storageType:String = 'Data';
 	public var flashing:Bool = true;
 	public var autoPause:Bool = true;
@@ -234,6 +239,7 @@ class ClientPrefs {
 			FlxG.sound.muted = FlxG.save.data.mute;
 
 		#if DISCORD_ALLOWED DiscordClient.check(); #end
+		#if mobile mobile.ScreenStyle.apply(); #end
 
 		// controls on a separate save file
 		var save:FlxSave = new FlxSave();

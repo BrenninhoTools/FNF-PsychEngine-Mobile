@@ -43,6 +43,7 @@ class BaseOptionsMenu extends MusicBeatSubstate
 		bg.screenCenter();
 		bg.antialiasing = ClientPrefs.data.antialiasing;
 		add(bg);
+		mobile.WideScreen.fit(bg);
 
 		// avoids lagspikes while scrolling through menus!
 		grpOptions = new FlxTypedGroup<Alphabet>();
@@ -85,7 +86,7 @@ class BaseOptionsMenu extends MusicBeatSubstate
 				checkbox.ID = i;
 				checkboxGroup.add(checkbox);
 			}
-			else
+			else if(optionsArray[i].type != BUTTON)
 			{
 				optionText.x -= 80;
 				optionText.startPosition.x -= 80;
@@ -170,6 +171,13 @@ class BaseOptionsMenu extends MusicBeatSubstate
 						curOption.setValue((curOption.getValue() == true) ? false : true);
 						curOption.change();
 						reloadCheckboxes();
+					}
+
+				case BUTTON:
+					if(controls.ACCEPT || touchAccept)
+					{
+						FlxG.sound.play(Paths.sound('scrollMenu'));
+						curOption.change();
 					}
 
 				case KEYBIND:
@@ -277,7 +285,7 @@ class BaseOptionsMenu extends MusicBeatSubstate
 					}
 			}
 
-			if(controls.RESET)
+			if(controls.RESET && optionsArray[curSelected].type != BUTTON)
 			{
 				var leOption:Option = optionsArray[curSelected];
 				if(leOption.type != KEYBIND)
@@ -474,6 +482,7 @@ class BaseOptionsMenu extends MusicBeatSubstate
 	}
 
 	function updateTextFrom(option:Option) {
+		if(option.type == BUTTON) return;
 		if(option.type == KEYBIND)
 		{
 			updateBind(option);

@@ -14,6 +14,7 @@ enum OptionType {
 	PERCENT;
 	STRING;
 	KEYBIND;
+	BUTTON;
 }
 
 class Option
@@ -50,6 +51,7 @@ class Option
 		this.variable = variable;
 		this.type = type;
 		this.options = options;
+		if(type == BUTTON) return;
 
 		if(this.type != KEYBIND) this.defaultValue = Reflect.getProperty(ClientPrefs.defaultData, variable);
 		switch(type)
@@ -76,6 +78,8 @@ class Option
 				defaultValue = '';
 				defaultKeys = {gamepad: 'NONE', keyboard: 'NONE'};
 				keys = {gamepad: 'NONE', keyboard: 'NONE'};
+
+			case BUTTON:
 		}
 
 		try

@@ -568,6 +568,7 @@ class WeekEditorFreeplayState extends MusicBeatState implements PsychUIEventHand
 		bg.antialiasing = ClientPrefs.data.antialiasing;
 		bg.color = FlxColor.WHITE;
 		add(bg);
+		mobile.WideScreen.fit(bg);
 
 		grpSongs = new FlxTypedGroup<Alphabet>();
 		add(grpSongs);

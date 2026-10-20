@@ -3,9 +3,15 @@ name: Build
 on:
   push:
     branches: [ main, experimental ]
+    paths-ignore: [ '**.md', 'docs/**', 'art/**', '.vscode/**' ]
   pull_request:
     branches: [ main, experimental ]
+    paths-ignore: [ '**.md', 'docs/**', 'art/**', '.vscode/**' ]
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   buildAndroid:
@@ -23,17 +29,46 @@ jobs:
         id: setup-ndk
         with:
           ndk-version: r21e
+          local-cache: true
 
       - uses: krdlab/setup-haxe@master
         with:
           haxe-version: 4.3.7
 
+      - name: Restore Haxelib Cache
+        id: haxelib-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/haxelib
+          key: haxelib-android-4.3.7-${{ hashFiles('setup/unix.sh') }}
+
+      - name: Restore hxcpp Cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.hxcpp_cache
+          key: hxcpp-android-${{ github.sha }}
+          restore-keys: hxcpp-android-
+
+      - name: Restore Gradle Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('Project.xml', 'project/android/**/*.gradle') }}
+          restore-keys: gradle-
+
       - name: Install Haxelib
         run: |
+          mkdir -p ~/.hxcpp_cache
+          echo "HXCPP_COMPILE_CACHE=$HOME/.hxcpp_cache" >> $GITHUB_ENV
+          echo "::notice title=hxcpp cache (restored)::$(du -sh ~/.hxcpp_cache | cut -f1)"
           haxelib setup ~/haxelib
-          haxelib install hxcpp > /dev/null --quiet
-          chmod +x ./setup/unix.sh
-          sh ./setup/unix.sh
+          if [ "${{ steps.haxelib-cache.outputs.cache-hit }}" != "true" ]; then
+            haxelib install hxcpp > /dev/null --quiet
+            chmod +x ./setup/unix.sh
+            sh ./setup/unix.sh
+          fi
 
       - name: Use Bundled Lua
         run: |
@@ -66,7 +101,9 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: haxelib run lime build android -D officialBuild $SIGNING_FLAG
+        run: |
+          haxelib run lime build android -D officialBuild $SIGNING_FLAG
+          echo "::notice title=hxcpp cache (after build)::$(du -sh ~/.hxcpp_cache | cut -f1)"
 
       - name: Verify APK
         run: |
@@ -96,12 +133,31 @@ jobs:
         with:
           haxe-version: 4.3.7
 
+      - name: Restore Haxelib Cache
+        id: haxelib-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/haxelib
+          key: haxelib-ios-4.3.7-${{ hashFiles('setup/unix.sh') }}
+
+      - name: Restore hxcpp Cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.hxcpp_cache
+          key: hxcpp-ios-${{ github.sha }}
+          restore-keys: hxcpp-ios-
+
       - name: Install Haxelib
         run: |
+          mkdir -p ~/.hxcpp_cache
+          echo "HXCPP_COMPILE_CACHE=$HOME/.hxcpp_cache" >> $GITHUB_ENV
+          echo "::notice title=hxcpp cache (restored)::$(du -sh ~/.hxcpp_cache | cut -f1)"
           arch -x86_64 haxelib setup ~/haxelib
-          arch -x86_64 haxelib install hxcpp > /dev/null --quiet
-          chmod +x ./setup/unix.sh
-          arch -x86_64 /bin/sh ./setup/unix.sh
+          if [ "${{ steps.haxelib-cache.outputs.cache-hit }}" != "true" ]; then
+            arch -x86_64 haxelib install hxcpp > /dev/null --quiet
+            chmod +x ./setup/unix.sh
+            arch -x86_64 /bin/sh ./setup/unix.sh
+          fi
 
       - name: Use Bundled Lua
         run: |
@@ -128,7 +184,8 @@ jobs:
           cd export/release/ios
           PROJECT=$(find . -maxdepth 1 -name "*.xcodeproj" | head -n 1)
           if [ -z "$PROJECT" ]; then echo "The Xcode project was not generated, check the Compile step for the real error"; exit 1; fi
-          xcodebuild -project "$PROJECT" -configuration Release -sdk iphoneos CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
+          xcodebuild -project "$PROJECT" -configuration Release -sdk iphoneos -arch arm64 ONLY_ACTIVE_ARCH=YES CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
+          echo "::notice title=hxcpp cache (after build)::$(du -sh ~/.hxcpp_cache | cut -f1)"
 
       - name: Package IPA
         run: |

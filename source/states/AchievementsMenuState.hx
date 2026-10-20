@@ -47,6 +47,7 @@ class AchievementsMenuState extends MusicBeatState
 		menuBG.screenCenter();
 		menuBG.scrollFactor.set();
 		add(menuBG);
+		mobile.WideScreen.fit(menuBG);
 
 		grpOptions = new FlxSpriteGroup();
 		grpOptions.scrollFactor.x = 0;
