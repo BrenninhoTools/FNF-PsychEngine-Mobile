@@ -5,6 +5,34 @@ package backend;
 
 class PsychCamera extends FlxCamera
 {
+	public static inline final MAX_WIDE_ZOOM:Float = 1.2;
+
+	public var wideZoom(default, set):Bool = false;
+
+	public static function getWideZoom():Float
+	{
+		if (FlxG.initialWidth <= 0 || FlxG.width <= FlxG.initialWidth) return 1;
+		return Math.min(FlxG.width / FlxG.initialWidth, MAX_WIDE_ZOOM);
+	}
+
+	function set_wideZoom(value:Bool):Bool
+	{
+		wideZoom = value;
+		set_zoom(zoom);
+		return value;
+	}
+
+	override function set_zoom(value:Float):Float
+	{
+		var result:Float = super.set_zoom(value);
+		if (wideZoom)
+		{
+			var factor:Float = getWideZoom();
+			if (factor != 1) setScale(result * factor, result * factor);
+		}
+		return result;
+	}
+
 	override public function update(elapsed:Float):Void
 	{
 		// follow the target, if there is one
@@ -105,10 +133,5 @@ class PsychCamera extends FlxCamera
 		scroll.x += (_scrollTarget.x - scroll.x) * mult;
 		scroll.y += (_scrollTarget.y - scroll.y) * mult;
 		//trace('lerp on this frame: $mult');
-	}
-
-	override function set_followLerp(value:Float)
-	{
-		return followLerp = value;
 	}
 }

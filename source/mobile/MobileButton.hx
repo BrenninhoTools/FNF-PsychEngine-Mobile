@@ -5,6 +5,7 @@ class MobileButton extends FlxSprite
 	static inline final MARGIN:Float = 16;
 
 	public var key(default, null):String;
+	public var anchorRight:Bool = false;
 
 	public function new(image:String, prefix:String, key:String, scale:Float = 1)
 	{
@@ -28,6 +29,7 @@ class MobileButton extends FlxSprite
 	{
 		var button:MobileButton = new MobileButton('backButton', 'back', 'back', 0.65);
 		button.setPosition(FlxG.width - button.width - MARGIN, top ? MARGIN : FlxG.height - button.height - MARGIN);
+		button.anchorRight = true;
 		if (camera != null) button.cameras = [camera];
 		return button;
 	}
@@ -36,6 +38,7 @@ class MobileButton extends FlxSprite
 	{
 		var button:MobileButton = new MobileButton('pauseButton', 'pause', 'pause', 0.8);
 		button.setPosition(FlxG.width - button.width - MARGIN, MARGIN);
+		button.anchorRight = true;
 		if (camera != null) button.cameras = [camera];
 		return button;
 	}
@@ -48,6 +51,7 @@ class MobileButton extends FlxSprite
 	override function update(elapsed:Float)
 	{
 		super.update(elapsed);
+		if (anchorRight) x = FlxG.width - width - MARGIN;
 		if (animation.curAnim != null && animation.curAnim.name == 'press' && animation.curAnim.finished)
 			animation.play('idle');
 	}

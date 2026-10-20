@@ -26,6 +26,7 @@ public class Storage
 	public static final String TYPE_DATA = "Data";
 	public static final String TYPE_MEDIA = "Media";
 	public static final String TYPE_EXTERNAL = "External";
+	public static final String TYPE_OBB = "Obb";
 
 	private static final String TYPE_MARKER = ".storage_type";
 	private static final String LEGACY_EXTERNAL_MARKER = ".use_external";
@@ -73,7 +74,7 @@ public class Storage
 		if (marker.exists())
 		{
 			String value = readText(marker).trim();
-			if (value.equals(TYPE_MEDIA) || value.equals(TYPE_EXTERNAL) || value.equals(TYPE_DATA)) return value;
+			if (value.equals(TYPE_MEDIA) || value.equals(TYPE_EXTERNAL) || value.equals(TYPE_DATA) || value.equals(TYPE_OBB)) return value;
 		}
 		if (new File(getAppDir(context), LEGACY_EXTERNAL_MARKER).exists()) return TYPE_EXTERNAL;
 		return TYPE_DATA;
@@ -91,6 +92,15 @@ public class Storage
 		{
 			File dir = getMediaDir(context);
 			if (dir != null) return dir;
+		}
+		if (TYPE_OBB.equals(type))
+		{
+			File dir = context.getObbDir();
+			if (dir != null)
+			{
+				if (!dir.exists()) dir.mkdirs();
+				if (dir.isDirectory() && dir.canWrite()) return dir;
+			}
 		}
 		return getAppDir(context);
 	}
@@ -155,6 +165,20 @@ public class Storage
 		catch (Exception e)
 		{
 			return -1;
+		}
+	}
+
+	public static long getLastUpdateTime()
+	{
+		Context context = Extension.mainContext;
+		if (context == null) return 0;
+		try
+		{
+			return context.getPackageManager().getPackageInfo(context.getPackageName(), 0).lastUpdateTime;
+		}
+		catch (Exception e)
+		{
+			return 0;
 		}
 	}
 

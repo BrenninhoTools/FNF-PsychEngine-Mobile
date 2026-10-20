@@ -10,7 +10,17 @@ class StorageUtil
 	public static inline final DATA:String = 'Data';
 	public static inline final MEDIA:String = 'Media';
 	public static inline final EXTERNAL:String = 'External';
-	public static final TYPES:Array<String> = [DATA, MEDIA, EXTERNAL];
+	public static inline final OBB:String = 'Obb';
+	public static final TYPES:Array<String> = [DATA, MEDIA, OBB, EXTERNAL];
+
+	static var cachedGameDir:String = null;
+	static var cachedType:String = null;
+
+	public static function clearCache()
+	{
+		cachedGameDir = null;
+		cachedType = null;
+	}
 	public static final FOLDERS:Array<String> = ['mods', 'crash', 'exports', 'screenshots'];
 
 	#if android
@@ -28,10 +38,11 @@ class StorageUtil
 
 	public static function getGameDir():String
 	{
+		if (cachedGameDir != null) return cachedGameDir;
 		#if android
 		var path:String = jni('getGameDirPath', '()Ljava/lang/String;')();
-		if (path != null && path.length > 0) return Path.addTrailingSlash(path);
-		return Path.addTrailingSlash(lime.system.System.applicationStorageDirectory);
+		cachedGameDir = Path.addTrailingSlash(path != null && path.length > 0 ? path : lime.system.System.applicationStorageDirectory);
+		return cachedGameDir;
 		#elseif ios
 		return Path.addTrailingSlash(lime.system.System.documentsDirectory);
 		#else
@@ -50,9 +61,11 @@ class StorageUtil
 
 	public static function getStorageType():String
 	{
+		if (cachedType != null) return cachedType;
 		#if android
 		var type:String = jni('getStorageType', '()Ljava/lang/String;')();
-		return TYPES.contains(type) ? type : DATA;
+		cachedType = TYPES.contains(type) ? type : DATA;
+		return cachedType;
 		#else
 		return DATA;
 		#end
@@ -63,6 +76,7 @@ class StorageUtil
 		#if android
 		if (!TYPES.contains(type)) type = DATA;
 		jni('setStorageType', '(Ljava/lang/String;)V')(type);
+		clearCache();
 		#end
 	}
 
@@ -79,6 +93,18 @@ class StorageUtil
 	public static function isAppOwned():Bool
 	{
 		return getStorageType() != EXTERNAL;
+	}
+
+	public static function describe(?type:String):String
+	{
+		if (type == null) type = getStorageType();
+		return switch (type)
+		{
+			case MEDIA: 'Android/media';
+			case OBB: 'Android/obb';
+			case EXTERNAL: '/storage/emulated/0/.PsychEngine';
+			default: 'Android/data';
+		}
 	}
 
 	public static function hasAccess():Bool
@@ -201,6 +227,7 @@ class StorageUtil
 
 	public static function applyGameDir()
 	{
+		clearCache();
 		var dir:String = getGameDir();
 		ensureFolders(dir);
 		Sys.setCwd(dir);

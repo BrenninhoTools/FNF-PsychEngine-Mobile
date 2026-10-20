@@ -2,7 +2,6 @@ package states.editors;
 
 import flixel.graphics.FlxGraphic;
 
-import flixel.system.debug.interaction.tools.Pointer.GraphicCursorCross;
 import flixel.util.FlxDestroyUtil;
 
 #if mobile
@@ -113,7 +112,10 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 
 		addCharacter();
 
-		cameraFollowPointer = new FlxSprite().loadGraphic(FlxGraphic.fromClass(GraphicCursorCross));
+		var cross:openfl.display.BitmapData = new openfl.display.BitmapData(40, 40, true, 0);
+		cross.fillRect(new openfl.geom.Rectangle(18, 0, 4, 40), 0xFFFFFFFF);
+		cross.fillRect(new openfl.geom.Rectangle(0, 18, 40, 4), 0xFFFFFFFF);
+		cameraFollowPointer = new FlxSprite().loadGraphic(cross);
 		cameraFollowPointer.setGraphicSize(40, 40);
 		cameraFollowPointer.updateHitbox();
 
