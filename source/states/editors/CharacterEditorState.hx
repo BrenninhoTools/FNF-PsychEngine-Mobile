@@ -171,7 +171,9 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 
 		super.create();
 		#if mobile
-		add(new mobile.EditorPad(['ESCAPE SPACE R F Q E', 'W A S D I J K L', 'SHIFT CONTROL Z C V LEFT DOWN UP RIGHT']));
+		var editorPad:mobile.EditorPad = new mobile.EditorPad(['ESCAPE SPACE R F Q E', 'W A S D I J K L', 'SHIFT CONTROL Z C V LEFT DOWN UP RIGHT']);
+		editorPad.pinchZoom = true;
+		add(editorPad);
 		#end
 	}
 

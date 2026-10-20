@@ -138,6 +138,7 @@
 	<haxelib name="extension-androidtools" if="android"/>
 	<dependency name="psychmobile" path="project/android/psychmobile" if="android"/>
 	<dependency name="PhotosUI.framework" if="ios"/>
+	<dependency name="AudioToolbox.framework" if="ios"/>
 	<config:android extension="org.psychengine.mobile.FileDialogs" if="android"/>
 	<config:android extension="org.psychengine.mobile.ScreenExtension" if="android"/>
 	<template path="templates" if="ios"/>

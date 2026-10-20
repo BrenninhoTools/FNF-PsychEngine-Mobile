@@ -2,6 +2,7 @@ package mobile;
 
 import flixel.input.keyboard.FlxKey;
 import openfl.events.KeyboardEvent;
+import openfl.events.MouseEvent;
 
 class EditorPad extends FlxSpriteGroup
 {
@@ -37,6 +38,20 @@ class EditorPad extends FlxSpriteGroup
 	var shown:Bool = false;
 	var escapeQueued:Bool = false;
 
+	public var pinchZoom:Bool = false;
+	public var minZoom:Float = 0.1;
+	public var maxZoom:Float = 3;
+
+	var panButton:TouchButton;
+	var hideButton:TouchButton;
+	var panMode:Bool = false;
+	var hidden:Bool = false;
+	var rightDown:Bool = false;
+	var gestureDistance:Float = -1;
+	var gestureX:Float = 0;
+	var gestureY:Float = 0;
+	var wheelAccum:Float = 0;
+
 	public function new(rows:Array<String>)
 	{
 		super();
@@ -66,6 +81,17 @@ class EditorPad extends FlxSpriteGroup
 		toggleButton.useImage(keyImage('keys'));
 		toggleButton.visible = keyRows.length > 0;
 		add(toggleButton);
+
+		panButton = new TouchButton(toggleButton.x - toggleWidth - GAP, toggleButton.y, 'PAN', toggleWidth, KEY_HEIGHT, 18);
+		panButton.useImage(keyImage('pan'));
+		add(panButton);
+
+		hideButton = new TouchButton(toggleButton.x + toggleWidth + GAP, toggleButton.y, 'HIDE', toggleWidth, KEY_HEIGHT, 18);
+		hideButton.useImage(keyImage('hide'));
+		add(hideButton);
+
+		FlxG.stage.addEventListener(MouseEvent.MOUSE_DOWN, onMouseDown, false, 999);
+		FlxG.stage.addEventListener(MouseEvent.MOUSE_UP, onMouseUp, false, 999);
 
 		for (rowIndex in 0...keyRows.length)
 		{
@@ -103,8 +129,101 @@ class EditorPad extends FlxSpriteGroup
 		return Paths.image('mobile/virtualpad/keys/' + name.toLowerCase());
 	}
 
+	function onMouseDown(e:MouseEvent)
+	{
+		if (!panMode) return;
+		e.stopImmediatePropagation();
+		rightDown = true;
+		FlxG.stage.dispatchEvent(new MouseEvent(MouseEvent.RIGHT_MOUSE_DOWN, true, false, e.localX, e.localY));
+	}
+
+	function onMouseUp(e:MouseEvent)
+	{
+		if (!rightDown) return;
+		e.stopImmediatePropagation();
+		rightDown = false;
+		FlxG.stage.dispatchEvent(new MouseEvent(MouseEvent.RIGHT_MOUSE_UP, true, false, e.localX, e.localY));
+	}
+
+	function setPanMode(value:Bool)
+	{
+		panMode = value;
+		panButton.toggled = value;
+		if (!value && rightDown)
+		{
+			rightDown = false;
+			FlxG.stage.dispatchEvent(new MouseEvent(MouseEvent.RIGHT_MOUSE_UP, true, false, 0, 0));
+		}
+	}
+
+	function setHidden(value:Bool)
+	{
+		hidden = value;
+		hideButton.toggled = value;
+		virtualPad.visible = !value;
+		virtualPad.releaseAll();
+		toggleButton.visible = !value && keyButtons.length > 0;
+		panButton.visible = !value;
+		for (button in keyButtons) button.visible = shown && !value;
+		hideButton.alpha = value ? 0.5 : 1;
+	}
+
+	function updateGestures()
+	{
+		var touches:Array<Array<Float>> = TouchInput.touchPositions(true);
+		if (touches.length < 2)
+		{
+			gestureDistance = -1;
+			wheelAccum = 0;
+			return;
+		}
+
+		var dx:Float = touches[1][0] - touches[0][0];
+		var dy:Float = touches[1][1] - touches[0][1];
+		var distance:Float = Math.sqrt(dx * dx + dy * dy);
+		var midX:Float = (touches[0][0] + touches[1][0]) / 2;
+		var midY:Float = (touches[0][1] + touches[1][1]) / 2;
+
+		if (gestureDistance < 0)
+		{
+			gestureDistance = distance;
+			gestureX = midX;
+			gestureY = midY;
+			return;
+		}
+
+		var camera:FlxCamera = FlxG.camera;
+		if (pinchZoom && camera != null)
+		{
+			if (gestureDistance > 0 && distance > 0)
+				camera.zoom = FlxMath.bound(camera.zoom * (distance / gestureDistance), minZoom, maxZoom);
+			camera.scroll.x -= (midX - gestureX) / camera.zoom;
+			camera.scroll.y -= (midY - gestureY) / camera.zoom;
+		}
+		else
+		{
+			wheelAccum += midY - gestureY;
+			while (Math.abs(wheelAccum) >= 36)
+			{
+				var delta:Int = wheelAccum > 0 ? 1 : -1;
+				wheelAccum -= delta * 36;
+				FlxG.stage.dispatchEvent(new MouseEvent(MouseEvent.MOUSE_WHEEL, true, false, 0, 0, null, false, false, false, false, delta));
+			}
+		}
+
+		gestureDistance = distance;
+		gestureX = midX;
+		gestureY = midY;
+	}
+
 	public function setSuspended(suspended:Bool)
 	{
+		if (suspended)
+		{
+			setPanMode(false);
+			setHidden(false);
+		}
+		panButton.visible = hideButton.visible = !suspended;
 		toggleButton.visible = !suspended && keyButtons.length > 0;
 		virtualPad.visible = !suspended;
 		virtualPad.releaseAll();
@@ -124,6 +243,10 @@ class EditorPad extends FlxSpriteGroup
 		}
 
 		super.update(elapsed);
+
+		if (hideButton.visible && hideButton.justTapped) setHidden(!hidden);
+		if (panButton.visible && panButton.justTapped) setPanMode(!panMode);
+		if (hideButton.visible) updateGestures();
 
 		if (toggleButton.visible && toggleButton.justTapped)
 		{
@@ -161,6 +284,9 @@ class EditorPad extends FlxSpriteGroup
 
 	override function destroy()
 	{
+		FlxG.stage.removeEventListener(MouseEvent.MOUSE_DOWN, onMouseDown);
+		FlxG.stage.removeEventListener(MouseEvent.MOUSE_UP, onMouseUp);
+		if (rightDown) FlxG.stage.dispatchEvent(new MouseEvent(MouseEvent.RIGHT_MOUSE_UP, true, false, 0, 0));
 		if (current == this) current = null;
 		TouchInput.blockGestures = false;
 		for (key in heldKeys.copy()) setKey(key, false);

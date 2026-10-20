@@ -117,7 +117,9 @@ class StageEditorState extends MusicBeatState implements PsychUIEventHandler.Psy
 
 		super.create();
 		#if mobile
-		add(new mobile.EditorPad(['ESCAPE SPACE R F Q E W S', 'I J K L LEFT DOWN UP RIGHT', 'SHIFT CONTROL']));
+		var editorPad:mobile.EditorPad = new mobile.EditorPad(['ESCAPE SPACE R F Q E W S', 'I J K L LEFT DOWN UP RIGHT', 'SHIFT CONTROL']);
+		editorPad.pinchZoom = true;
+		add(editorPad);
 		#end
 	}
 

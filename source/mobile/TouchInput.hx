@@ -44,6 +44,10 @@ class TouchInput
 	public static var laneRects:Array<Array<Float>> = null;
 	public static var blockGestures:Bool = false;
 	public static var tapX(default, null):Float = 0;
+	static var touchBegan:Int = 0;
+	static var touchEnded:Int = 0;
+	static var lastReleaseX:Float = 0;
+	static var lastReleaseY:Float = 0;
 	public static var tapY(default, null):Float = 0;
 
 	static var lanePressed:Array<Bool> = [for (i in 0...LANES) false];
@@ -236,6 +240,66 @@ class TouchInput
 		return dragging;
 	}
 
+	public static function touchCount(freeOnly:Bool = false):Int
+	{
+		refresh();
+		var count:Int = 0;
+		for (point in points)
+			if (!freeOnly || (point.control == null && point.button == null)) count++;
+		return count;
+	}
+
+	public static function touchPositions(freeOnly:Bool = false):Array<Array<Float>>
+	{
+		refresh();
+		var ids:Array<Int> = [for (id in points.keys()) id];
+		ids.sort((a, b) -> a - b);
+		var result:Array<Array<Float>> = [];
+		for (id in ids)
+		{
+			var point:TouchPoint = points.get(id);
+			if (freeOnly && (point.control != null || point.button != null)) continue;
+			result.push([point.x, point.y]);
+		}
+		return result;
+	}
+
+	public static function touchJustPressed():Bool
+	{
+		refresh();
+		return touchBegan > 0;
+	}
+
+	public static function touchJustReleased():Bool
+	{
+		refresh();
+		return touchEnded > 0;
+	}
+
+	public static function touchPressed():Bool
+	{
+		return touchCount() > 0;
+	}
+
+	public static function getTouchX(index:Int = 0):Float
+	{
+		var positions:Array<Array<Float>> = touchPositions();
+		return index >= 0 && index < positions.length ? positions[index][0] : lastReleaseX;
+	}
+
+	public static function getTouchY(index:Int = 0):Float
+	{
+		var positions:Array<Array<Float>> = touchPositions();
+		return index >= 0 && index < positions.length ? positions[index][1] : lastReleaseY;
+	}
+
+	public static function touchOverlaps(object:FlxObject, ?camera:FlxCamera):Bool
+	{
+		for (position in touchPositions())
+			if (overlapsScreen(object, position[0], position[1], camera)) return true;
+		return false;
+	}
+
 	public static function isNoteKey(key:String):Bool
 	{
 		return laneOf(key) > -1;
@@ -418,6 +482,7 @@ class TouchInput
 			lanePressed[i] = false;
 		}
 		swipeUp = swipeDown = swipeLeft = swipeRight = tap = tapConsumed = backTap = pauseTap = dragging = false;
+		touchBegan = touchEnded = 0;
 		dragY = 0;
 		tappedControls.resize(0);
 		heldControls.resize(0);
@@ -436,6 +501,7 @@ class TouchInput
 					var button:MobileButton = buttonAt(event.x, event.y);
 					var control:FlxObject = button == null ? controlAt(event.x, event.y) : null;
 					if (button != null) button.press();
+					touchBegan++;
 					points.set(event.id, {
 						id: event.id,
 						x: event.x,
@@ -472,6 +538,9 @@ class TouchInput
 					points.remove(event.id);
 					point.x = event.x;
 					point.y = event.y;
+					touchEnded++;
+					lastReleaseX = point.x;
+					lastReleaseY = point.y;
 					release(point);
 			}
 		}

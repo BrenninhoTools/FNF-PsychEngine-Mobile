@@ -180,6 +180,13 @@ class HScript extends Iris
 		#end
 		set('ShaderFilter', openfl.filters.ShaderFilter);
 		set('StringTools', StringTools);
+		set('MobileAPI', mobile.MobileAPI);
+		set('isMobile', mobile.MobileAPI.isMobile);
+		set('vibrate', mobile.MobileAPI.vibrate);
+		#if mobile
+		set('TouchInput', mobile.TouchInput);
+		set('VirtualPad', mobile.VirtualPad);
+		#end
 		#if flxanimate
 		set('FlxAnimate', FlxAnimate);
 		#end

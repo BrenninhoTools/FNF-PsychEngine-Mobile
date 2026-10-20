@@ -40,12 +40,63 @@ class CopyState extends FlxState
 	{
 		try
 		{
-			return !FileSystem.exists(MARKER) || File.getContent(MARKER) != StorageUtil.getInstallStamp();
+			if (!FileSystem.exists(MARKER) || File.getContent(MARKER) != StorageUtil.getInstallStamp()) return true;
+			return missingFiles(1).length > 0;
 		}
 		catch (e:Dynamic)
 		{
 			return true;
 		}
+	}
+
+	static function shouldExtract(id:String):Bool
+	{
+		if (id.startsWith('manifest/') || id.startsWith('__')) return false;
+		if (LimeAssets.exists(id, lime.utils.AssetType.FONT)) return false;
+		return !unextractable().contains(id);
+	}
+
+	static function hasData(id:String):Bool
+	{
+		try
+		{
+			return LimeAssets.getBytes(id) != null || LimeAssets.getText(id) != null;
+		}
+		catch (e:Dynamic)
+		{
+			return false;
+		}
+	}
+
+	static inline final SKIP_FILE:String = '.psych_unextractable';
+	static var skipList:Array<String> = null;
+
+	static function unextractable():Array<String>
+	{
+		if (skipList != null) return skipList;
+		skipList = [];
+		try
+		{
+			if (FileSystem.exists(SKIP_FILE))
+				skipList = [for (line in File.getContent(SKIP_FILE).split('\n')) if (line.length > 0) line];
+		}
+		catch (e:Dynamic) {}
+		return skipList;
+	}
+
+	public static function missingFiles(limit:Int = -1):Array<String>
+	{
+		var missing:Array<String> = [];
+		for (id in LimeAssets.list())
+		{
+			if (!shouldExtract(id)) continue;
+			if (!FileSystem.exists(id))
+			{
+				missing.push(id);
+				if (limit > 0 && missing.length >= limit) break;
+			}
+		}
+		return missing;
 	}
 
 	override function create()
@@ -171,12 +222,7 @@ class CopyState extends FlxState
 
 	function verifyFromManifest()
 	{
-		var missing:Array<String> = [];
-		for (id in LimeAssets.list())
-		{
-			if (id.startsWith('assets/embed/') || !isGameFile(id)) continue;
-			if (!FileSystem.exists(id)) missing.push(id);
-		}
+		var missing:Array<String> = missingFiles();
 
 		mutex.acquire();
 		stage = 'Checking files';
@@ -202,8 +248,19 @@ class CopyState extends FlxState
 			{
 				ok = false;
 			}
+			if (!ok && !hasData(id))
+			{
+				ok = true;
+				unextractable().push(id);
+			}
 			setProgress(id, ok);
 		}
+
+		try
+		{
+			if (unextractable().length > 0) File.saveContent(SKIP_FILE, unextractable().join('\n'));
+		}
+		catch (e:Dynamic) {}
 	}
 
 	static function copyWithRetry(read:Void->Bytes, target:String)
