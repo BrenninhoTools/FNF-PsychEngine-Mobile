@@ -11,12 +11,16 @@ extern "C" const char *psych_ios_import_result(int index);
 extern "C" const char *psych_ios_import_message(void);
 extern "C" int psych_ios_dialog_status(void);
 extern "C" void psych_ios_dialog_reset(void);
+extern "C" void psych_ios_hitbox_image(const char *targetPath, int maxSize);
+extern "C" const char *psych_ios_hitbox_message(void);
 ')
 #end
 class NativeImport
 {
 	public static inline final VSLICE:Int = 1;
 	public static inline final IMAGES:Int = 2;
+	public static inline final HITBOX:Int = 3;
+	public static inline final HITBOX_MAX_SIZE:Int = 1024;
 
 	static inline final IDLE:Int = 0;
 	static inline final WAITING:Int = 1;
@@ -53,6 +57,35 @@ class NativeImport
 		FlxG.signals.postUpdate.add(poll);
 	}
 
+	public static function pickHitboxImage(target:String, done:String->Void, fail:String->Void, ?cancel:Void->Void)
+	{
+		if (polling) return;
+		kind = HITBOX;
+		onDone = function(_) done(target);
+		onFail = fail;
+		onCancel = cancel;
+
+		var dir:String = haxe.io.Path.directory(target);
+		try
+		{
+			if (dir.length > 0 && !FileSystem.exists(dir)) FileSystem.createDirectory(dir);
+		}
+		catch (e:Dynamic) {}
+
+		#if android
+		JNI.createStaticMethod(DIALOGS, 'reset', '()V')();
+		JNI.createStaticMethod(DIALOGS, 'importHitboxImage', '(Ljava/lang/String;I)V')(target, HITBOX_MAX_SIZE);
+		#elseif ios
+		untyped __cpp__('psych_ios_dialog_reset()');
+		untyped __cpp__('psych_ios_hitbox_image({0}.utf8_str(), {1})', target, HITBOX_MAX_SIZE);
+		#else
+		if (fail != null) fail('Importing images is only available on Android and iOS.');
+		return;
+		#end
+		polling = true;
+		FlxG.signals.postUpdate.add(poll);
+	}
+
 	static function cacheDirectory(name:String):String
 	{
 		var dir:String = haxe.io.Path.addTrailingSlash(lime.system.System.applicationStorageDirectory) + 'file_dialogs/$name/';
@@ -82,6 +115,7 @@ class NativeImport
 
 	static function results():Array<String>
 	{
+		if (kind == HITBOX) return [];
 		#if android
 		if (kind == VSLICE)
 			return [
@@ -103,6 +137,11 @@ class NativeImport
 
 	static function message():String
 	{
+		#if android
+		if (kind == HITBOX) return JNI.createStaticMethod(DIALOGS, 'getHitboxMessage', '()Ljava/lang/String;')();
+		#elseif ios
+		if (kind == HITBOX) return untyped __cpp__('::String(psych_ios_hitbox_message())');
+		#end
 		#if android
 		var name:String = kind == VSLICE ? 'org/psychengine/mobile/VSliceImport' : 'org/psychengine/mobile/StageImageImport';
 		return JNI.createStaticMethod(name, 'getMessage', '()Ljava/lang/String;')();

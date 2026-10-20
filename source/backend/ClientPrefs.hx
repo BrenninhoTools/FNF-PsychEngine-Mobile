@@ -18,6 +18,8 @@ import states.TitleState;
 	public var hitboxOpacity:Float = 0.75;
 	public var hitboxStyle:String = 'Gradient';
 	public var hitboxColors:String = 'Notes';
+	public var hitboxImageFit:String = 'Stretch';
+	public var hitboxImageTint:Bool = false;
 	public var hitboxRGB:Array<FlxColor> = [0xFFC24B99, 0xFF00FFFF, 0xFF12FA05, 0xFFF9393F];
 	public var pauseButtonInvisible:Bool = false;
 	public var pauseChartEditor:Bool = true;

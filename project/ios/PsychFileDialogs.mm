@@ -1,4 +1,5 @@
 #import <UIKit/UIKit.h>
+#import <PhotosUI/PhotosUI.h>
 #include <string.h>
 
 #pragma clang diagnostic push
@@ -291,6 +292,169 @@ extern "C" void psych_ios_dialog_open(const char *cacheDir)
 		UIDocumentPickerViewController *picker = [[UIDocumentPickerViewController alloc] initWithDocumentTypes:@[@"public.item"] inMode:UIDocumentPickerModeImport];
 		psychPresentPicker(picker);
 	});
+}
+
+static char psychHitboxTarget[4096] = {0};
+static char psychHitboxMessage[512] = {0};
+static int psychHitboxMaxSize = 1024;
+
+static void psychHitboxFail(const char *message)
+{
+	psychCopyText(psychHitboxMessage, sizeof(psychHitboxMessage), message);
+	psychDialogStatus = PSYCH_STATUS_ERROR;
+}
+
+static void psychSaveHitboxImage(UIImage *image)
+{
+	if (image == nil)
+	{
+		psychHitboxFail("Could not read the selected image.");
+		return;
+	}
+
+	CGSize size = image.size;
+	CGFloat largest = MAX(size.width, size.height);
+	if (largest <= 0)
+	{
+		psychHitboxFail("The selected image is empty.");
+		return;
+	}
+	CGFloat ratio = largest > psychHitboxMaxSize ? psychHitboxMaxSize / largest : 1;
+	CGSize target = CGSizeMake(MAX(1, floor(size.width * ratio)), MAX(1, floor(size.height * ratio)));
+
+	UIGraphicsImageRendererFormat *format = [UIGraphicsImageRendererFormat defaultFormat];
+	format.scale = 1;
+	format.opaque = NO;
+	UIGraphicsImageRenderer *renderer = [[UIGraphicsImageRenderer alloc] initWithSize:target format:format];
+	UIImage *resized = [renderer imageWithActions:^(UIGraphicsImageRendererContext *context) {
+		[image drawInRect:CGRectMake(0, 0, target.width, target.height)];
+	}];
+
+	NSData *png = UIImagePNGRepresentation(resized);
+	if (png == nil)
+	{
+		psychHitboxFail("Could not convert the image to PNG.");
+		return;
+	}
+
+	NSString *path = [NSString stringWithUTF8String:psychHitboxTarget];
+	[[NSFileManager defaultManager] createDirectoryAtPath:[path stringByDeletingLastPathComponent] withIntermediateDirectories:YES attributes:nil error:nil];
+	NSString *temp = [path stringByAppendingString:@".part"];
+	if (![png writeToFile:temp atomically:YES])
+	{
+		psychHitboxFail("Could not save the image.");
+		return;
+	}
+	[[NSFileManager defaultManager] removeItemAtPath:path error:nil];
+	if (![[NSFileManager defaultManager] moveItemAtPath:temp toPath:path error:nil])
+	{
+		psychHitboxFail("Could not save the image.");
+		return;
+	}
+	psychDialogStatus = PSYCH_STATUS_DONE;
+}
+
+API_AVAILABLE(ios(14))
+@interface PsychHitboxPickerDelegate : NSObject <PHPickerViewControllerDelegate>
+@end
+
+@implementation PsychHitboxPickerDelegate
+
+- (void)picker:(PHPickerViewController *)picker didFinishPicking:(NSArray<PHPickerResult *> *)results
+{
+	[picker dismissViewControllerAnimated:YES completion:nil];
+	PHPickerResult *result = results.firstObject;
+	if (result == nil)
+	{
+		psychDialogStatus = PSYCH_STATUS_CANCELLED;
+		return;
+	}
+
+	NSItemProvider *provider = result.itemProvider;
+	if (![provider canLoadObjectOfClass:[UIImage class]])
+	{
+		psychHitboxFail("The selected item is not an image.");
+		return;
+	}
+	[provider loadObjectOfClass:[UIImage class] completionHandler:^(id<NSItemProviderReading> object, NSError *error) {
+		psychSaveHitboxImage([object isKindOfClass:[UIImage class]] ? (UIImage *)object : nil);
+	}];
+}
+
+@end
+
+@interface PsychHitboxDocumentDelegate : NSObject <UIDocumentPickerDelegate>
+@end
+
+@implementation PsychHitboxDocumentDelegate
+
+- (void)documentPicker:(UIDocumentPickerViewController *)controller didPickDocumentsAtURLs:(NSArray<NSURL *> *)urls
+{
+	NSURL *url = urls.firstObject;
+	if (url == nil)
+	{
+		psychDialogStatus = PSYCH_STATUS_CANCELLED;
+		return;
+	}
+	BOOL scoped = [url startAccessingSecurityScopedResource];
+	UIImage *image = [UIImage imageWithContentsOfFile:url.path];
+	if (scoped) [url stopAccessingSecurityScopedResource];
+	psychSaveHitboxImage(image);
+}
+
+- (void)documentPicker:(UIDocumentPickerViewController *)controller didPickDocumentAtURL:(NSURL *)url
+{
+	[self documentPicker:controller didPickDocumentsAtURLs:@[url]];
+}
+
+- (void)documentPickerWasCancelled:(UIDocumentPickerViewController *)controller
+{
+	psychDialogStatus = PSYCH_STATUS_CANCELLED;
+}
+
+@end
+
+static id psychHitboxPickerDelegate = nil;
+static PsychHitboxDocumentDelegate *psychHitboxDocumentDelegate = nil;
+
+extern "C" void psych_ios_hitbox_image(const char *targetPath, int maxSize)
+{
+	psychDialogStatus = PSYCH_STATUS_WAITING;
+	psychCopyText(psychHitboxTarget, sizeof(psychHitboxTarget), targetPath);
+	psychCopyText(psychHitboxMessage, sizeof(psychHitboxMessage), "");
+	psychHitboxMaxSize = maxSize > 0 ? maxSize : 1024;
+
+	dispatch_async(dispatch_get_main_queue(), ^{
+		UIViewController *top = psychTopController();
+		if (top == nil)
+		{
+			psychHitboxFail("Could not open the image picker.");
+			return;
+		}
+
+		if (@available(iOS 14.0, *))
+		{
+			PHPickerConfiguration *configuration = [[PHPickerConfiguration alloc] init];
+			configuration.filter = [PHPickerFilter imagesFilter];
+			configuration.selectionLimit = 1;
+			PHPickerViewController *picker = [[PHPickerViewController alloc] initWithConfiguration:configuration];
+			if (psychHitboxPickerDelegate == nil) psychHitboxPickerDelegate = [[PsychHitboxPickerDelegate alloc] init];
+			picker.delegate = psychHitboxPickerDelegate;
+			[top presentViewController:picker animated:YES completion:nil];
+		}
+		else
+		{
+			UIDocumentPickerViewController *picker = [[UIDocumentPickerViewController alloc] initWithDocumentTypes:@[@"public.image"] inMode:UIDocumentPickerModeImport];
+			if (psychHitboxDocumentDelegate == nil) psychHitboxDocumentDelegate = [[PsychHitboxDocumentDelegate alloc] init];
+			picker.delegate = psychHitboxDocumentDelegate;
+			[top presentViewController:picker animated:YES completion:nil];
+		}
+	});
+}
+
+extern "C" const char *psych_ios_hitbox_message(void)
+{
+	return psychHitboxMessage;
 }
 
 #pragma clang diagnostic pop

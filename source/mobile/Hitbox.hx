@@ -8,7 +8,58 @@ import openfl.geom.Rectangle;
 
 class Hitbox extends FlxSpriteGroup
 {
-	public static final STYLES:Array<String> = ['Gradient', 'Solid', 'Outline', 'Bottom Glow', 'Edges', 'Rounded', 'Neon', 'Arrows', 'Corners'];
+	public static final STYLES:Array<String> = ['Gradient', 'Solid', 'Outline', 'Bottom Glow', 'Edges', 'Rounded', 'Neon', 'Arrows', 'Corners', 'Image'];
+	public static final IMAGE_FITS:Array<String> = ['Stretch', 'Fit', 'Fill'];
+	public static inline final IMAGE_FILE:String = 'mobile/hitbox_image.png';
+
+	static var cachedImage:BitmapData = null;
+
+	public static function imagePath():String
+	{
+		return haxe.io.Path.addTrailingSlash(Sys.getCwd()) + IMAGE_FILE;
+	}
+
+	public static function hasImage():Bool
+	{
+		try
+		{
+			return FileSystem.exists(imagePath());
+		}
+		catch (e:Dynamic)
+		{
+			return false;
+		}
+	}
+
+	public static function reloadImage()
+	{
+		if (cachedImage != null) cachedImage.dispose();
+		cachedImage = null;
+	}
+
+	public static function removeImage()
+	{
+		reloadImage();
+		try
+		{
+			if (hasImage()) FileSystem.deleteFile(imagePath());
+		}
+		catch (e:Dynamic) {}
+	}
+
+	static function loadImage():BitmapData
+	{
+		if (cachedImage != null) return cachedImage;
+		try
+		{
+			if (hasImage()) cachedImage = BitmapData.fromFile(imagePath());
+		}
+		catch (e:Dynamic)
+		{
+			cachedImage = null;
+		}
+		return cachedImage;
+	}
 	public static final COLOR_MODES:Array<String> = ['Notes', 'Classic', 'Pastel', 'White', 'RGB'];
 
 	static final CLASSIC:Array<FlxColor> = [0xFFC24B99, 0xFF00FFFF, 0xFF12FA05, 0xFFF9393F];
@@ -46,7 +97,8 @@ class Hitbox extends FlxSpriteGroup
 		{
 			var bitmap:BitmapData = createLaneBitmap(ClientPrefs.data.hitboxStyle, laneWidth, FlxG.height, i);
 			lanes[i].loadGraphic(bitmap, false, 0, 0, true);
-			lanes[i].color = laneColor(i);
+			var imageStyle:Bool = ClientPrefs.data.hitboxStyle == 'Image' && loadImage() != null;
+			lanes[i].color = imageStyle && !ClientPrefs.data.hitboxImageTint ? FlxColor.WHITE : laneColor(i);
 		}
 		visible = preview || !ClientPrefs.data.hitboxInvisible;
 	}
@@ -70,6 +122,12 @@ class Hitbox extends FlxSpriteGroup
 	static function createLaneBitmap(style:String, width:Int, height:Int, lane:Int):BitmapData
 	{
 		var bitmap:BitmapData;
+		if (style == 'Image')
+		{
+			var image:BitmapData = loadImage();
+			if (image != null) return drawImage(image, width, height);
+			style = 'Gradient';
+		}
 		switch (style)
 		{
 			case 'Rounded':
@@ -153,6 +211,26 @@ class Hitbox extends FlxSpriteGroup
 				bitmap.fillRect(new Rectangle(0, 0, 4, height), 0xFFFFFFFF);
 				bitmap.fillRect(new Rectangle(width - 4, 0, 4, height), 0xFFFFFFFF);
 		}
+		return bitmap;
+	}
+
+	static function drawImage(image:BitmapData, width:Int, height:Int):BitmapData
+	{
+		var bitmap:BitmapData = new BitmapData(width, height, true, 0);
+		var scaleX:Float = width / image.width;
+		var scaleY:Float = height / image.height;
+		switch (ClientPrefs.data.hitboxImageFit)
+		{
+			case 'Fit':
+				scaleX = scaleY = Math.min(scaleX, scaleY);
+			case 'Fill':
+				scaleX = scaleY = Math.max(scaleX, scaleY);
+			default:
+		}
+		var matrix:openfl.geom.Matrix = new openfl.geom.Matrix();
+		matrix.scale(scaleX, scaleY);
+		matrix.translate((width - image.width * scaleX) / 2, (height - image.height * scaleY) / 2);
+		bitmap.draw(image, matrix, null, null, new Rectangle(0, 0, width, height), true);
 		return bitmap;
 	}
 

@@ -27,6 +27,10 @@ public class FileDialogs extends Extension
 	private static final int OPEN_REQUEST = 7102;
 	private static final int VSLICE_REQUEST = 7103;
 	private static final int IMAGES_REQUEST = 7104;
+	private static final int HITBOX_REQUEST = 7105;
+
+	private static String pendingHitboxTarget = null;
+	private static int pendingHitboxMaxSize = 1024;
 
 	private static volatile int status = STATUS_IDLE;
 	private static volatile String resultPath = "";
@@ -187,9 +191,66 @@ public class FileDialogs extends Extension
 		});
 	}
 
+	public static void importHitboxImage(final String targetPath, final int maxSize)
+	{
+		final Activity activity = Extension.mainActivity;
+		if (activity == null)
+		{
+			status = STATUS_ERROR;
+			return;
+		}
+
+		status = STATUS_WAITING;
+		pendingHitboxTarget = targetPath;
+		pendingHitboxMaxSize = maxSize > 0 ? maxSize : 1024;
+		HitboxImage.reset();
+		activity.runOnUiThread(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				try
+				{
+					Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+					intent.addCategory(Intent.CATEGORY_OPENABLE);
+					intent.setType("image/*");
+					activity.startActivityForResult(Intent.createChooser(intent, "Hitbox Image"), HITBOX_REQUEST);
+				}
+				catch (Exception e)
+				{
+					status = STATUS_ERROR;
+				}
+			}
+		});
+	}
+
+	public static String getHitboxMessage()
+	{
+		return HitboxImage.getMessage();
+	}
+
 	@Override
 	public boolean onActivityResult(int requestCode, int resultCode, Intent data)
 	{
+		if (requestCode == HITBOX_REQUEST)
+		{
+			if (resultCode != Activity.RESULT_OK || data == null || data.getData() == null)
+			{
+				status = STATUS_CANCELLED;
+				return true;
+			}
+			final Uri uri = data.getData();
+			new Thread(new Runnable()
+			{
+				@Override
+				public void run()
+				{
+					boolean ok = HitboxImage.save(mainActivity.getContentResolver(), uri, pendingHitboxTarget, pendingHitboxMaxSize);
+					status = ok ? STATUS_DONE : STATUS_ERROR;
+				}
+			}).start();
+			return true;
+		}
 		if (requestCode == VSLICE_REQUEST)
 		{
 			onVSliceResult(resultCode, data);
