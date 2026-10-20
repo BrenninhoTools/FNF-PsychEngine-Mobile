@@ -41,7 +41,7 @@ class TouchInput
 	static inline final END:Int = 2;
 
 	public static var hitboxEnabled:Bool = false;
-	public static var laneCenters:Array<Float> = null;
+	public static var laneRects:Array<Array<Float>> = null;
 	public static var blockGestures:Bool = false;
 	public static var tapX(default, null):Float = 0;
 	public static var tapY(default, null):Float = 0;
@@ -311,22 +311,17 @@ class TouchInput
 		}
 	}
 
-	static function laneAt(x:Float):Int
+	static function laneAt(x:Float, y:Float):Int
 	{
-		if (laneCenters != null && laneCenters.length > 0)
+		if (laneRects != null && laneRects.length > 0)
 		{
-			var nearest:Int = 0;
-			var best:Float = Math.POSITIVE_INFINITY;
-			for (i in 0...laneCenters.length)
+			for (i in 0...laneRects.length)
 			{
-				var distance:Float = Math.abs(x - laneCenters[i]);
-				if (distance < best)
-				{
-					best = distance;
-					nearest = i;
-				}
+				var rect:Array<Float> = laneRects[i];
+				if (rect != null && x >= rect[0] && x <= rect[0] + rect[2] && y >= rect[1] && y <= rect[1] + rect[3])
+					return i < LANES ? i : -1;
 			}
-			return nearest < LANES ? nearest : LANES - 1;
+			return -1;
 		}
 		var lane:Int = Std.int(x / (FlxG.width / LANES));
 		if (lane < 0) lane = 0;
@@ -490,7 +485,11 @@ class TouchInput
 			}
 			if (point.button != null) continue;
 			if (point.dragging) dragging = true;
-			if (hitboxEnabled) lanePressed[laneAt(point.x)] = true;
+			if (hitboxEnabled)
+			{
+				var lane:Int = laneAt(point.x, point.y);
+				if (lane > -1) lanePressed[lane] = true;
+			}
 		}
 
 		#if android
@@ -518,7 +517,10 @@ class TouchInput
 		}
 
 		if (hitboxEnabled && point.beganThisFrame)
-			lanePressed[laneAt(point.startX)] = true;
+		{
+			var lane:Int = laneAt(point.startX, point.startY);
+			if (lane > -1) lanePressed[lane] = true;
+		}
 
 		var dx:Float = point.x - point.startX;
 		var dy:Float = point.y - point.startY;

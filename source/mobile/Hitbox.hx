@@ -185,7 +185,7 @@ class Hitbox extends FlxSpriteGroup
 	override function destroy()
 	{
 		TouchInput.hitboxEnabled = false;
-		TouchInput.laneCenters = null;
+		TouchInput.laneRects = null;
 		if (Controls.instance != null) Controls.instance.controllerMode = false;
 		super.destroy();
 	}

@@ -211,7 +211,9 @@ class PlayState extends MusicBeatState
 	public var hitbox:mobile.Hitbox;
 	public var arrowsMode:Bool = false;
 	var savedDownScroll:Null<Bool> = null;
-	static final ARROW_CENTERS:Array<Float> = [0.1, 0.3, 0.66, 0.88];
+	static final ARROW_CENTERS:Array<Float> = [0.19, 0.37, 0.63, 0.81];
+	static inline final ARROWS_SCALE:Float = 1.25;
+	static inline final ARROWS_TOUCH_PADDING:Float = 26;
 	public var pauseButton:mobile.MobileButton;
 	#end
 	public var cameraSpeed:Float = 1;
@@ -1066,7 +1068,7 @@ class PlayState extends MusicBeatState
 				if(!skipArrowStartTween)
 				{
 					notes.forEachAlive(function(note:Note) {
-						if(ClientPrefs.data.opponentStrums || note.mustPress)
+						if((ClientPrefs.data.opponentStrums #if mobile && !arrowsMode #end) || note.mustPress)
 						{
 							note.copyAlpha = false;
 							note.alpha = note.multAlpha;
@@ -1556,19 +1558,36 @@ class PlayState extends MusicBeatState
 	#if mobile
 	function applyArrowsLayout()
 	{
-		var centers:Array<Float> = [];
+		var rects:Array<Array<Float>> = [];
 		for (i => strum in playerStrums.members)
 		{
 			if (strum == null) continue;
+			strum.scale.set(strum.scale.x * ARROWS_SCALE, strum.scale.y * ARROWS_SCALE);
+			strum.updateHitbox();
 			var center:Float = FlxG.width * ARROW_CENTERS[i % ARROW_CENTERS.length];
 			strum.x = center - strum.width / 2;
-			strum.y = FlxG.height - strum.height - 30;
+			strum.y = FlxG.height - strum.height - 24;
 			strum.downScroll = true;
-			centers.push(center);
+			rects.push([strum.x - ARROWS_TOUCH_PADDING, strum.y - ARROWS_TOUCH_PADDING, strum.width + ARROWS_TOUCH_PADDING * 2, strum.height + ARROWS_TOUCH_PADDING * 2]);
 		}
 		for (strum in opponentStrums.members)
 			if (strum != null) strum.visible = false;
-		mobile.TouchInput.laneCenters = centers;
+		mobile.TouchInput.laneRects = rects;
+	}
+
+	function prepareArrowsNote(note:Note)
+	{
+		if (!note.mustPress)
+		{
+			note.copyAlpha = false;
+			note.alpha = 0;
+			note.visible = false;
+			return;
+		}
+		note.scale.x *= ARROWS_SCALE;
+		if (!note.isSustainNote) note.scale.y *= ARROWS_SCALE;
+		note.updateHitbox();
+		note.offsetX *= ARROWS_SCALE;
 	}
 	#end
 
@@ -1830,6 +1849,9 @@ class PlayState extends MusicBeatState
 			while (unspawnNotes.length > 0 && unspawnNotes[0].strumTime - Conductor.songPosition < time)
 			{
 				var dunceNote:Note = unspawnNotes[0];
+				#if mobile
+				if (arrowsMode) prepareArrowsNote(dunceNote);
+				#end
 				notes.insert(0, dunceNote);
 				dunceNote.spawned = true;
 
