@@ -72,7 +72,6 @@ class TouchInput
 	static var activeTouches:Int = 0;
 	static var primaryBlocked:Bool = false;
 	static var initialized:Bool = false;
-	static var escapeQueued:Bool = false;
 
 	public static function init()
 	{
@@ -479,18 +478,7 @@ class TouchInput
 		}
 
 		#if android
-		if (escapeQueued)
-		{
-			escapeQueued = false;
-			FlxG.stage.dispatchEvent(new openfl.events.KeyboardEvent(openfl.events.KeyboardEvent.KEY_UP, true, false, 0, flixel.input.keyboard.FlxKey.ESCAPE));
-		}
-
-		if (FlxG.android.justReleased.BACK)
-		{
-			backTap = pauseTap = true;
-			FlxG.stage.dispatchEvent(new openfl.events.KeyboardEvent(openfl.events.KeyboardEvent.KEY_DOWN, true, false, 0, flixel.input.keyboard.FlxKey.ESCAPE));
-			escapeQueued = true;
-		}
+		if (FlxG.android.justReleased.BACK) backTap = pauseTap = true;
 		#end
 	}
 
