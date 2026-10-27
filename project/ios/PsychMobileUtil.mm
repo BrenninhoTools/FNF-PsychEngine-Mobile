@@ -38,3 +38,29 @@ extern "C" void psych_ios_vibrate(int duration)
 		}
 	});
 }
+
+static NSDictionary *psych_ios_fs_attributes(void)
+{
+	NSString *path = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
+	if (path == nil) path = NSHomeDirectory();
+	return [[NSFileManager defaultManager] attributesOfFileSystemForPath:path error:nil];
+}
+
+extern "C" double psych_ios_free_space(void)
+{
+	if (@available(iOS 11.0, *))
+	{
+		NSURL *url = [NSURL fileURLWithPath:NSHomeDirectory()];
+		NSDictionary *values = [url resourceValuesForKeys:@[NSURLVolumeAvailableCapacityForImportantUsageKey] error:nil];
+		NSNumber *important = values[NSURLVolumeAvailableCapacityForImportantUsageKey];
+		if (important != nil && [important longLongValue] > 0) return [important doubleValue];
+	}
+	NSNumber *free = psych_ios_fs_attributes()[NSFileSystemFreeSize];
+	return free != nil ? [free doubleValue] : -1;
+}
+
+extern "C" double psych_ios_total_space(void)
+{
+	NSNumber *size = psych_ios_fs_attributes()[NSFileSystemSize];
+	return size != nil ? [size doubleValue] : -1;
+}

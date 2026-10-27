@@ -62,6 +62,8 @@ jobs:
         run: |
           mkdir -p ~/.hxcpp_cache
           echo "HXCPP_COMPILE_CACHE=$HOME/.hxcpp_cache" >> $GITHUB_ENV
+          echo "HXCPP_COMPILE_THREADS=$(nproc)" >> $GITHUB_ENV
+          echo "GRADLE_OPTS=-Dorg.gradle.parallel=true -Dorg.gradle.caching=true -Dorg.gradle.vfs.watch=false -Dkotlin.incremental=false" >> $GITHUB_ENV
           echo "::notice title=hxcpp cache (restored)::$(du -sh ~/.hxcpp_cache | cut -f1)"
           haxelib setup ~/haxelib
           if [ "${{ steps.haxelib-cache.outputs.cache-hit }}" != "true" ]; then
@@ -128,6 +130,7 @@ jobs:
           name: androidBuild
           path: export/release/android/bin/app/build/outputs/apk/**/*.apk
           if-no-files-found: error
+          compression-level: 0
 
   buildiOS:
     runs-on: macos-15
@@ -157,6 +160,7 @@ jobs:
         run: |
           mkdir -p ~/.hxcpp_cache
           echo "HXCPP_COMPILE_CACHE=$HOME/.hxcpp_cache" >> $GITHUB_ENV
+          echo "HXCPP_COMPILE_THREADS=$(sysctl -n hw.ncpu)" >> $GITHUB_ENV
           echo "::notice title=hxcpp cache (restored)::$(du -sh ~/.hxcpp_cache | cut -f1)"
           arch -x86_64 haxelib setup ~/haxelib
           if [ "${{ steps.haxelib-cache.outputs.cache-hit }}" != "true" ]; then
@@ -175,22 +179,29 @@ jobs:
       - name: Skip SScript setup mode
         run: echo 'oy9:showMacroty8:loopCosti25y10:includeAllfg' >> ~/settings.cocoa
 
-      - name: Compile
+      - name: Generate Xcode Project
         run: |
-          arch -x86_64 haxelib run lime build ios -D officialBuild 2>&1 | tee compile.log || true
+          arch -x86_64 haxelib run lime update ios -D officialBuild 2>&1 | tee compile.log || true
           if ! ls export/release/ios/*.xcodeproj > /dev/null 2>&1; then
-            echo "::error title=lime build ios::$(tail -n 60 compile.log | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')"
+            echo "::error title=lime update ios::$(tail -n 60 compile.log | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')"
             arch -x86_64 haxe -version 2>&1 | sed 's/^/::error title=haxe::/'
             arch -x86_64 haxelib list 2>&1 | head -n 40 | awk '{printf "%s%%0A", $0}' | sed 's/^/::error title=haxelib list::/'
             exit 1
           fi
 
-      - name: Build Xcode Project
+      - name: Compile
         run: |
+          set -o pipefail
           cd export/release/ios
           PROJECT=$(find . -maxdepth 1 -name "*.xcodeproj" | head -n 1)
-          if [ -z "$PROJECT" ]; then echo "The Xcode project was not generated, check the Compile step for the real error"; exit 1; fi
-          xcodebuild -project "$PROJECT" -configuration Release -sdk iphoneos -arch arm64 ONLY_ACTIVE_ARCH=YES CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
+          if [ -z "$PROJECT" ]; then echo "The Xcode project was not generated, check the Generate Xcode Project step for the real error"; exit 1; fi
+          if ! xcodebuild -project "$PROJECT" -configuration Release -sdk iphoneos -arch arm64 -jobs $(sysctl -n hw.ncpu) \
+            ONLY_ACTIVE_ARCH=YES COMPILER_INDEX_STORE_ENABLE=NO DEBUG_INFORMATION_FORMAT=dwarf \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build 2>&1 | tee ../../../xcode.log; then
+            grep -n -E "error:|Error |\*\* BUILD FAILED" ../../../xcode.log | tail -n 40 > ../../../errors.log || true
+            echo "::error title=xcodebuild (errors)::$(sed 's/%/%25/g' ../../../errors.log | awk '{printf "%s%%0A", $0}')"
+            exit 1
+          fi
           echo "::notice title=hxcpp cache (after build)::$(du -sh ~/.hxcpp_cache | cut -f1)"
 
       - name: Package IPA
@@ -199,7 +210,7 @@ jobs:
           if [ -z "$APP" ]; then echo "No .app found"; find export/release/ios -maxdepth 4; exit 1; fi
           mkdir -p ipa/Payload
           cp -R "$APP" ipa/Payload/
-          cd ipa && zip -qry ../PsychEngine.ipa Payload
+          cd ipa && zip -qry -1 ../PsychEngine.ipa Payload
 
       - name: Publish Artifact
         uses: actions/upload-artifact@v4.3.4
@@ -207,3 +218,4 @@ jobs:
           name: iOSBuild
           path: PsychEngine.ipa
           if-no-files-found: error
+          compression-level: 0

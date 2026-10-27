@@ -28,8 +28,22 @@ class CopyState extends FlxState
 	var failures:Array<String> = [];
 	var mutex:Mutex = new Mutex();
 
+	var bytesDone:Float = 0;
+	var bytesTotal:Float = 0;
+	var speed:Float = 0;
+	var lowSpace:Bool = false;
+
 	#if android
+	static inline final COPIER:String = 'org/psychengine/mobile/AssetCopier';
 	var nativeRunning:Bool = false;
+	var jniCache:Map<String, Dynamic> = new Map();
+
+	function copier(name:String, signature:String):Dynamic
+	{
+		var key:String = name + signature;
+		if (!jniCache.exists(key)) jniCache.set(key, JNI.createStaticMethod(COPIER, name, signature));
+		return jniCache.get(key)();
+	}
 	#end
 
 	var bar:FlxSprite;
@@ -126,11 +140,13 @@ class CopyState extends FlxState
 		add(detail);
 
 		#if android
-		stage = 'Copying from the APK';
-		JNI.createStaticMethod('org/psychengine/mobile/AssetCopier', 'start', '(Ljava/lang/String;)V')(StorageUtil.getGameDir());
+		stage = 'Reading the APK';
+		JNI.createStaticMethod(COPIER, 'start', '(Ljava/lang/String;)V')(StorageUtil.getGameDir());
 		nativeRunning = true;
 		#else
 		Thread.create(function() {
+			StorageUtil.cleanTemp(StorageUtil.getGameDir() + 'assets');
+			lowSpace = !StorageUtil.hasSpaceFor(64 * 1024 * 1024);
 			copyFromBundle();
 			verifyFromManifest();
 			mutex.acquire();
@@ -296,22 +312,27 @@ class CopyState extends FlxState
 		#if android
 		if (nativeRunning)
 		{
-			var copier:String = 'org/psychengine/mobile/AssetCopier';
-			var nativeTotal:Int = JNI.createStaticMethod(copier, 'getTotal', '()I')();
-			var nativeDone:Int = JNI.createStaticMethod(copier, 'getDone', '()I')();
-			var nativeFailed:Int = JNI.createStaticMethod(copier, 'getFailed', '()I')();
-			var current:String = JNI.createStaticMethod(copier, 'getCurrent', '()Ljava/lang/String;')();
+			var nativeTotal:Int = copier('getTotal', '()I');
+			var nativeDone:Int = copier('getDone', '()I');
+			var nativeFailed:Int = copier('getFailed', '()I');
+			var current:String = copier('getCurrent', '()Ljava/lang/String;');
+			var nativeStage:String = copier('getStage', '()Ljava/lang/String;');
 			mutex.acquire();
 			total = nativeTotal;
 			copied = nativeDone;
 			failed = nativeFailed;
 			currentFile = current == null ? '' : current;
+			if (nativeStage != null && nativeStage.length > 0) stage = nativeStage;
+			bytesDone = copier('getBytesDone', '()D');
+			bytesTotal = copier('getBytesNeeded', '()D');
+			speed = copier('getSpeed', '()D');
+			lowSpace = copier('isLowSpace', '()Z') == true;
 			mutex.release();
 
-			if (JNI.createStaticMethod(copier, 'isFinished', '()Z')() == true)
+			if (copier('isFinished', '()Z') == true)
 			{
 				nativeRunning = false;
-				var list:String = JNI.createStaticMethod(copier, 'getFailures', '()Ljava/lang/String;')();
+				var list:String = copier('getFailures', '()Ljava/lang/String;');
 				if (list != null)
 					for (line in list.split('\n'))
 						if (line.length > 0) failures.push(line);
@@ -335,8 +356,12 @@ class CopyState extends FlxState
 		mutex.release();
 
 		bar.scale.x = all > 0 ? Math.min(1, done / all) : 0;
-		status.text = '$label: $done / $all' + (errors > 0 ? ' ($errors failed)' : '');
-		detail.text = file;
+		var info:String = '$label: $done / $all';
+		if (bytesTotal > 0) info += ' (' + StorageUtil.formatSize(bytesDone) + ' / ' + StorageUtil.formatSize(bytesTotal) + (speed > 0 ? ', ' + StorageUtil.formatSize(speed) + '/s' : '') + ')';
+		if (errors > 0) info += ' - $errors failed';
+		status.text = info;
+		detail.text = lowSpace ? 'Not enough free space, some files may fail to copy. Free up space and reopen the game.\n' + file : file;
+		detail.color = lowSpace ? 0xFFFF7777 : 0xFF777777;
 
 		if (complete && !leaving)
 		{

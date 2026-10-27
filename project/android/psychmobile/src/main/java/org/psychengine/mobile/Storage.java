@@ -30,6 +30,8 @@ public class Storage
 
 	private static final String TYPE_MARKER = ".storage_type";
 	private static final String LEGACY_EXTERNAL_MARKER = ".use_external";
+	private static final String PROBE = ".psych_probe";
+	private static final int BUFFER_SIZE = 262144;
 
 	public static File getAppDir(Context context)
 	{
@@ -48,12 +50,37 @@ public class Storage
 				for (File dir : dirs)
 				{
 					if (dir == null) continue;
-					if (!dir.exists()) dir.mkdirs();
-					if (dir.isDirectory() && dir.canWrite()) return dir;
+					if (isWritable(dir)) return dir;
 				}
 			}
 		}
 		return null;
+	}
+
+	public static boolean isWritable(File dir)
+	{
+		if (dir == null) return false;
+		if (!dir.exists() && !dir.mkdirs()) return false;
+		if (!dir.isDirectory()) return false;
+		File probe = new File(dir, PROBE);
+		try
+		{
+			FileOutputStream output = new FileOutputStream(probe);
+			output.write(1);
+			output.close();
+			probe.delete();
+			return true;
+		}
+		catch (Exception e)
+		{
+			probe.delete();
+			return false;
+		}
+	}
+
+	public static boolean isWritable(String path)
+	{
+		return path != null && path.length() > 0 && isWritable(new File(path));
 	}
 
 	public static File getPublicDir()
@@ -85,8 +112,7 @@ public class Storage
 		if (TYPE_EXTERNAL.equals(type) && hasAccess(context))
 		{
 			File dir = getPublicDir();
-			if (!dir.exists()) dir.mkdirs();
-			if (dir.isDirectory() && dir.canWrite()) return dir;
+			if (isWritable(dir)) return dir;
 		}
 		if (TYPE_MEDIA.equals(type))
 		{
@@ -96,11 +122,7 @@ public class Storage
 		if (TYPE_OBB.equals(type))
 		{
 			File dir = context.getObbDir();
-			if (dir != null)
-			{
-				if (!dir.exists()) dir.mkdirs();
-				if (dir.isDirectory() && dir.canWrite()) return dir;
-			}
+			if (isWritable(dir)) return dir;
 		}
 		return getAppDir(context);
 	}
@@ -157,15 +179,117 @@ public class Storage
 
 	public static double getFreeSpace()
 	{
+		return getFreeSpaceFor(getGameDirPath());
+	}
+
+	public static double getFreeSpaceFor(String path)
+	{
 		try
 		{
-			StatFs stat = new StatFs(getGameDirPath());
-			return (double)stat.getAvailableBytes();
+			File dir = new File(path);
+			while (dir != null && !dir.exists()) dir = dir.getParentFile();
+			if (dir == null) return -1;
+			return (double)new StatFs(dir.getAbsolutePath()).getAvailableBytes();
 		}
 		catch (Exception e)
 		{
 			return -1;
 		}
+	}
+
+	public static double getTotalSpaceFor(String path)
+	{
+		try
+		{
+			File dir = new File(path);
+			while (dir != null && !dir.exists()) dir = dir.getParentFile();
+			if (dir == null) return -1;
+			return (double)new StatFs(dir.getAbsolutePath()).getTotalBytes();
+		}
+		catch (Exception e)
+		{
+			return -1;
+		}
+	}
+
+	public static double getFolderSize(String path)
+	{
+		return (double)folderSize(new File(path));
+	}
+
+	private static long folderSize(File file)
+	{
+		if (!file.exists()) return 0;
+		if (!file.isDirectory()) return file.length();
+		long size = 0;
+		File[] children = file.listFiles();
+		if (children != null)
+			for (File child : children) size += folderSize(child);
+		return size;
+	}
+
+	public static int deleteFolder(String path)
+	{
+		return deleteRecursive(new File(path));
+	}
+
+	private static int deleteRecursive(File file)
+	{
+		if (!file.exists()) return 0;
+		int count = 0;
+		if (file.isDirectory())
+		{
+			File[] children = file.listFiles();
+			if (children != null)
+				for (File child : children) count += deleteRecursive(child);
+		}
+		if (file.delete() && !file.isDirectory()) count++;
+		return count;
+	}
+
+	public static int cleanTemp(String path)
+	{
+		return cleanTempRecursive(new File(path));
+	}
+
+	private static int cleanTempRecursive(File dir)
+	{
+		if (!dir.isDirectory()) return 0;
+		int count = 0;
+		File[] children = dir.listFiles();
+		if (children == null) return 0;
+		for (File child : children)
+		{
+			if (child.isDirectory()) count += cleanTempRecursive(child);
+			else if ((child.getName().endsWith(".part") || child.getName().equals(PROBE)) && child.delete()) count++;
+		}
+		return count;
+	}
+
+	public static int moveFolder(String from, String to)
+	{
+		File source = new File(from);
+		File target = new File(to);
+		if (!source.exists()) return 0;
+		if (!target.exists())
+		{
+			File parent = target.getParentFile();
+			if (parent != null && !parent.exists()) parent.mkdirs();
+			if (source.renameTo(target)) return Math.max(1, countFiles(target));
+		}
+		int count = copyRecursive(source, target, false);
+		deleteRecursive(source);
+		return count;
+	}
+
+	private static int countFiles(File file)
+	{
+		if (!file.isDirectory()) return file.exists() ? 1 : 0;
+		int count = 0;
+		File[] children = file.listFiles();
+		if (children != null)
+			for (File child : children) count += countFiles(child);
+		return count;
 	}
 
 	public static long getLastUpdateTime()
@@ -215,14 +339,22 @@ public class Storage
 				count += copyRecursive(child, new File(target, child.getName()), overwrite);
 			return count;
 		}
-		if (target.exists() && !overwrite) return 0;
+		if (target.exists() && !overwrite && target.length() == source.length()) return 0;
+		File temp = new File(target.getAbsolutePath() + ".part");
 		try
 		{
-			copyStream(new FileInputStream(source), new FileOutputStream(target));
+			File parent = target.getParentFile();
+			if (parent != null && !parent.exists()) parent.mkdirs();
+			copyStream(new FileInputStream(source), new FileOutputStream(temp));
+			if (temp.length() != source.length()) throw new IOException("Size mismatch");
+			if (target.exists() && !target.delete()) throw new IOException("Delete failed");
+			if (!temp.renameTo(target)) throw new IOException("Rename failed");
+			target.setLastModified(source.lastModified());
 			return 1;
 		}
 		catch (Exception e)
 		{
+			temp.delete();
 			return 0;
 		}
 	}
@@ -231,7 +363,7 @@ public class Storage
 	{
 		try
 		{
-			byte[] buffer = new byte[65536];
+			byte[] buffer = new byte[BUFFER_SIZE];
 			int read;
 			while ((read = input.read(buffer)) != -1)
 				output.write(buffer, 0, read);

@@ -1,5 +1,8 @@
 # Mobile Scripting (Lua & HScript)
 
+> [!NOTE]
+> The mobile port, including this API, is vibecoded (written with AI assistance). If a function behaves differently from what is described here, please open an issue.
+
 These functions work in every Lua script. On desktop they are safe to call: they return neutral values (`false`, `0`, `-1`) or use the mouse instead of touches.
 
 In HScript, use the `MobileAPI` class (for example `MobileAPI.vibrate(150)`). `isMobile()` and `vibrate()` are also available directly, and on mobile `TouchInput` and `VirtualPad` are exposed too.
