@@ -17,7 +17,7 @@ import states.TitleState;
 	public var haptics:Bool = true;
 	public var hapticsIntensity:Float = 1.0;
 	public var hitboxInvisible:Bool = false;
-	public var hitboxOpacity:Float = 0.75;
+	public var hitboxOpacity:Float = 0.2;
 	public var hitboxStyle:String = 'Gradient';
 	public var hitboxColors:String = 'Notes';
 	public var hitboxImageFit:String = 'Stretch';

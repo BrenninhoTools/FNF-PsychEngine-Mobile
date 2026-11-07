@@ -13,17 +13,6 @@ class MobileSettingsSubState extends BaseOptionsMenu
 		title = Language.getPhrase('mobile_menu', 'Mobile Options');
 		rpcTitle = 'Mobile Options Menu';
 
-		var option:Option = new Option('Mobile Controls',
-			'Preview and customize the hitbox: style, colors and opacity.',
-			null,
-			BUTTON);
-		option.onChange = function()
-		{
-			ClientPrefs.saveSettings();
-			MusicBeatState.switchState(new options.MobileControlsState());
-		};
-		addOption(option);
-
 		var option:Option = new Option('Hitbox Mode:',
 			'Four Lanes: the screen is split into four touch lanes.\nArrows: tap the arrows at the bottom of the screen, only the opponent strums are shown, small, in the top-left corner.',
 			'hitboxMode',
@@ -47,6 +36,17 @@ class MobileSettingsSubState extends BaseOptionsMenu
 			'If checked, the pause menu shows a "Chart Editor" option\nright after "Restart Song".',
 			'pauseChartEditor',
 			BOOL);
+		addOption(option);
+
+		var option:Option = new Option('Hitbox Opacity',
+			'How visible the hitbox lanes are when you touch them.',
+			'hitboxOpacity',
+			PERCENT);
+		option.scrollSpeed = 1.6;
+		option.minValue = 0.1;
+		option.maxValue = 1;
+		option.changeValue = 0.05;
+		option.decimals = 2;
 		addOption(option);
 
 		var option:Option = new Option('Touch Cursor',
