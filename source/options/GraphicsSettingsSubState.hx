@@ -58,6 +58,14 @@ class GraphicsSettingsSubState extends BaseOptionsMenu
 		option.defaultValue = Std.int(FlxMath.bound(refreshRate, option.minValue, option.maxValue));
 		option.displayFormat = '%v FPS';
 		option.onChange = onChangeFramerate;
+
+		var option:Option = new Option('FPS Rework:',
+			"Off: uses the Framerate above.\nUnlocked: no limit, as fast as your device can go.\nDisplay: matches your screen's refresh rate.\nAdaptive: matches your screen, and lowers the limit when the game can't keep up so the framerate stays stable.",
+			'fpsRework',
+			STRING,
+			FPSManager.MODES);
+		addOption(option);
+		option.onChange = onChangeFramerate;
 		#end
 
 		super();
@@ -77,16 +85,7 @@ class GraphicsSettingsSubState extends BaseOptionsMenu
 
 	function onChangeFramerate()
 	{
-		if(ClientPrefs.data.framerate > FlxG.drawFramerate)
-		{
-			FlxG.updateFramerate = ClientPrefs.data.framerate;
-			FlxG.drawFramerate = ClientPrefs.data.framerate;
-		}
-		else
-		{
-			FlxG.drawFramerate = ClientPrefs.data.framerate;
-			FlxG.updateFramerate = ClientPrefs.data.framerate;
-		}
+		FPSManager.apply();
 	}
 
 	override function changeSelection(change:Int = 0)
