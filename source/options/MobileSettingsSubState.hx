@@ -25,7 +25,7 @@ class MobileSettingsSubState extends BaseOptionsMenu
 		addOption(option);
 
 		var option:Option = new Option('Hitbox Mode:',
-			'Four Lanes: the screen is split into four touch lanes.\nArrows: tap the arrows at the bottom of the screen, opponent notes are shown small in the top-left corner.',
+			'Four Lanes: the screen is split into four touch lanes.\nArrows: tap the arrows at the bottom of the screen, only the opponent strums are shown, small, in the top-left corner.',
 			'hitboxMode',
 			STRING,
 			['Four Lanes', 'Arrows']);

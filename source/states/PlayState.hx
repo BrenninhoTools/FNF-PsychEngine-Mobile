@@ -211,11 +211,12 @@ class PlayState extends MusicBeatState
 	public var hitbox:mobile.Hitbox;
 	public var arrowsMode:Bool = false;
 	var savedDownScroll:Null<Bool> = null;
-	static final ARROW_CENTERS:Array<Float> = [0.16, 0.35, 0.65, 0.84];
+	static final ARROW_CENTERS:Array<Float> = [0.2, 0.37, 0.63, 0.8];
 	static inline final ARROWS_SCALE:Float = 1;
 	static inline final ARROWS_TOUCH_PADDING:Float = 26;
 	static inline final ARROWS_OPPONENT_SCALE:Float = 0.5;
 	static inline final ARROWS_OPPONENT_MARGIN:Float = 20;
+	static inline final ARROWS_OPPONENT_TOP:Float = 55;
 	static inline final ARROWS_OPPONENT_SPACING:Float = 4;
 	public var pauseButton:mobile.MobileButton;
 	#end
@@ -1071,7 +1072,7 @@ class PlayState extends MusicBeatState
 				if(!skipArrowStartTween)
 				{
 					notes.forEachAlive(function(note:Note) {
-						if(ClientPrefs.data.opponentStrums || note.mustPress)
+						if((ClientPrefs.data.opponentStrums #if mobile && !arrowsMode #end) || note.mustPress)
 						{
 							note.copyAlpha = false;
 							note.alpha = note.multAlpha;
@@ -1580,7 +1581,7 @@ class PlayState extends MusicBeatState
 			strum.scale.set(strum.scale.x * ARROWS_OPPONENT_SCALE, strum.scale.y * ARROWS_OPPONENT_SCALE);
 			strum.updateHitbox();
 			strum.x = nextX;
-			strum.y = ARROWS_OPPONENT_MARGIN;
+			strum.y = ARROWS_OPPONENT_TOP;
 			strum.downScroll = false;
 			strum.visible = ClientPrefs.data.opponentStrums;
 			nextX += strum.width + ARROWS_OPPONENT_SPACING;
@@ -1590,19 +1591,17 @@ class PlayState extends MusicBeatState
 
 	function prepareArrowsNote(note:Note)
 	{
-		if (!note.mustPress && !ClientPrefs.data.opponentStrums)
+		if (!note.mustPress)
 		{
 			note.copyAlpha = false;
 			note.alpha = 0;
 			note.visible = false;
 			return;
 		}
-		var scale:Float = note.mustPress ? ARROWS_SCALE : ARROWS_OPPONENT_SCALE;
-		note.scale.x *= scale;
-		if (!note.isSustainNote) note.scale.y *= scale;
-		else if (!note.mustPress) note.flipY = false;
+		note.scale.x *= ARROWS_SCALE;
+		if (!note.isSustainNote) note.scale.y *= ARROWS_SCALE;
 		note.updateHitbox();
-		note.offsetX *= scale;
+		note.offsetX *= ARROWS_SCALE;
 	}
 	#end
 
