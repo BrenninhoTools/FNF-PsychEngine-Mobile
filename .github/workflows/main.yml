@@ -3,10 +3,10 @@ name: Build
 on:
   push:
     branches: [ main, experimental ]
-    paths-ignore: [ '**.md', 'docs/**', 'art/**', '.vscode/**' ]
+    paths-ignore: [ '**.md', 'docs/**', 'documents-mobile/**', 'art/**', '.vscode/**' ]
   pull_request:
     branches: [ main, experimental ]
-    paths-ignore: [ '**.md', 'docs/**', 'art/**', '.vscode/**' ]
+    paths-ignore: [ '**.md', 'docs/**', 'documents-mobile/**', 'art/**', '.vscode/**' ]
   workflow_dispatch:
 
 concurrency:
@@ -28,6 +28,7 @@ jobs:
             /art/icons/
             /art/readme.txt
             !/docs/
+            !/documents-mobile/
 
       - name: Use Java 17
         run: echo "JAVA_HOME=$JAVA_HOME_17_X64" >> $GITHUB_ENV
@@ -153,6 +154,7 @@ jobs:
             /art/icons/
             /art/readme.txt
             !/docs/
+            !/documents-mobile/
 
       - uses: krdlab/setup-haxe@master
         with:
