@@ -31,6 +31,30 @@ class MobileSettingsSubState extends BaseOptionsMenu
 			['Four Lanes', 'Arrows']);
 		addOption(option);
 
+		var option:Option = new Option('Invisible Hitbox',
+			'If checked, the hitbox lanes are hidden during gameplay.\nThey still work while hidden.',
+			'hitboxInvisible',
+			BOOL);
+		addOption(option);
+
+		var option:Option = new Option('Invisible Pause Button',
+			'If checked, the pause button is hidden during gameplay.\nYou can still tap its corner to pause.',
+			'pauseButtonInvisible',
+			BOOL);
+		addOption(option);
+
+		var option:Option = new Option('Chart Editor in Pause',
+			'If checked, the pause menu shows a "Chart Editor" option\nright after "Restart Song".',
+			'pauseChartEditor',
+			BOOL);
+		addOption(option);
+
+		var option:Option = new Option('Touch Cursor',
+			'If checked, a circle shows where your fingers are touching the screen.',
+			'touchCursor',
+			BOOL);
+		addOption(option);
+
 		var option:Option = new Option('Haptics',
 			'If checked, the phone vibrates when you hit a note, while you hold a sustain\nand a bit stronger when you miss.',
 			'haptics',
@@ -49,41 +73,6 @@ class MobileSettingsSubState extends BaseOptionsMenu
 		option.changeValue = 0.1;
 		option.decimals = 1;
 		option.onChange = function() mobile.MobileAPI.haptic(mobile.MobileAPI.HAPTIC_MEDIUM, 0.12);
-		addOption(option);
-
-		var option:Option = new Option('Touch Cursor',
-			'If checked, a circle shows where your fingers are touching the screen.',
-			'touchCursor',
-			BOOL);
-		addOption(option);
-
-		var option:Option = new Option('Invisible Hitbox',
-			'If checked, the hitbox lanes are hidden during gameplay.\nThey still work while hidden.',
-			'hitboxInvisible',
-			BOOL);
-		addOption(option);
-
-		var option:Option = new Option('Hitbox Opacity',
-			'How visible the hitbox lanes are when you touch them.',
-			'hitboxOpacity',
-			PERCENT);
-		option.scrollSpeed = 1.6;
-		option.minValue = 0.1;
-		option.maxValue = 1;
-		option.changeValue = 0.05;
-		option.decimals = 2;
-		addOption(option);
-
-		var option:Option = new Option('Invisible Pause Button',
-			'If checked, the pause button is hidden during gameplay.\nYou can still tap its corner to pause.',
-			'pauseButtonInvisible',
-			BOOL);
-		addOption(option);
-
-		var option:Option = new Option('Chart Editor in Pause',
-			'If checked, the pause menu shows a "Chart Editor" option\nright after "Restart Song".',
-			'pauseChartEditor',
-			BOOL);
 		addOption(option);
 
 		var option:Option = new Option('Screen Style:',
