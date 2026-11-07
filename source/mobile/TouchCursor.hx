@@ -14,7 +14,9 @@ typedef CursorPoint = {
 
 class TouchCursor extends Sprite
 {
-	static inline final RADIUS:Float = 30;
+	static inline final RADIUS:Float = 14;
+	static inline final COLOR:Int = 0xA855F7;
+	static inline final OUTLINE:Int = 0xD8B4FE;
 	static inline final FADE_TIME:Float = 0.25;
 
 	public static var instance(default, null):TouchCursor;
@@ -100,13 +102,13 @@ class TouchCursor extends Sprite
 
 			var grow:Float = point.held ? 1 : 1 + (1 - point.life) * 0.6;
 			var radius:Float = RADIUS * scale * grow;
-			graphics.lineStyle(3 * scale, 0xFFFFFF, 0.85 * point.life);
-			graphics.beginFill(0xFFFFFF, 0.22 * point.life);
+			graphics.lineStyle(2 * scale, OUTLINE, 0.9 * point.life);
+			graphics.beginFill(COLOR, 0.35 * point.life);
 			graphics.drawCircle(point.x, point.y, radius);
 			graphics.endFill();
 			graphics.lineStyle(0, 0, 0);
-			graphics.beginFill(0xFFFFFF, 0.9 * point.life);
-			graphics.drawCircle(point.x, point.y, 5 * scale);
+			graphics.beginFill(COLOR, 0.95 * point.life);
+			graphics.drawCircle(point.x, point.y, 3 * scale);
 			graphics.endFill();
 		}
 	}

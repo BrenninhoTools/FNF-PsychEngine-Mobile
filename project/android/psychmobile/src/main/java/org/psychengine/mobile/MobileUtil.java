@@ -96,23 +96,27 @@ public class MobileUtil
 		return cachedVibrator;
 	}
 
-	public static void haptic(int strength)
+	private static final int[] HAPTIC_DURATIONS = { 12, 22, 40 };
+	private static final int[] HAPTIC_AMPLITUDES = { 70, 140, 220 };
+
+	public static void haptic(int strength, int intensityPercent)
 	{
+		if (intensityPercent <= 0) return;
 		Vibrator vibrator = getVibrator();
 		if (vibrator == null) return;
+		int index = Math.max(0, Math.min(2, strength));
+		float intensity = intensityPercent / 100f;
+		int duration = Math.round(HAPTIC_DURATIONS[index] * (intensity <= 1 ? 1 : 1 + (intensity - 1) * 0.25f));
 		try
 		{
-			if (Build.VERSION.SDK_INT >= 29)
+			if (Build.VERSION.SDK_INT >= 26)
 			{
-				int effect = strength <= 0 ? VibrationEffect.EFFECT_TICK : (strength == 1 ? VibrationEffect.EFFECT_CLICK : VibrationEffect.EFFECT_HEAVY_CLICK);
-				vibrator.vibrate(VibrationEffect.createPredefined(effect));
+				int amplitude = VibrationEffect.DEFAULT_AMPLITUDE;
+				if (vibrator.hasAmplitudeControl()) amplitude = Math.max(1, Math.min(255, Math.round(HAPTIC_AMPLITUDES[index] * intensity)));
+				else duration = Math.max(5, Math.round(HAPTIC_DURATIONS[index] * Math.max(0.4f, intensity)));
+				vibrator.vibrate(VibrationEffect.createOneShot(duration, amplitude));
 			}
-			else
-			{
-				int duration = strength <= 0 ? 12 : (strength == 1 ? 25 : 45);
-				if (Build.VERSION.SDK_INT >= 26) vibrator.vibrate(VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE));
-				else vibrator.vibrate(duration);
-			}
+			else vibrator.vibrate(Math.max(5, Math.round(HAPTIC_DURATIONS[index] * Math.max(0.4f, intensity))));
 		}
 		catch (Exception e) {}
 	}

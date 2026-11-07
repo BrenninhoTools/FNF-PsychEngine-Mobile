@@ -32,10 +32,23 @@ class MobileSettingsSubState extends BaseOptionsMenu
 		addOption(option);
 
 		var option:Option = new Option('Haptics',
-			'If checked, the phone vibrates lightly when you hit a note\nand a bit stronger when you miss.',
+			'If checked, the phone vibrates when you hit a note, while you hold a sustain\nand a bit stronger when you miss.',
 			'haptics',
 			BOOL);
-		option.onChange = function() if (ClientPrefs.data.haptics) mobile.MobileAPI.haptic(mobile.MobileAPI.HAPTIC_MEDIUM);
+		option.onChange = function() mobile.MobileAPI.haptic(mobile.MobileAPI.HAPTIC_MEDIUM);
+		addOption(option);
+
+		var option:Option = new Option('Haptics Intensity',
+			'How strong the vibrations are. 0.0 turns them off, 1.0 is the default.',
+			'hapticsIntensity',
+			FLOAT);
+		option.displayFormat = '%v';
+		option.scrollSpeed = 2;
+		option.minValue = 0.0;
+		option.maxValue = 5.0;
+		option.changeValue = 0.1;
+		option.decimals = 1;
+		option.onChange = function() mobile.MobileAPI.haptic(mobile.MobileAPI.HAPTIC_MEDIUM, 0.12);
 		addOption(option);
 
 		var option:Option = new Option('Touch Cursor',

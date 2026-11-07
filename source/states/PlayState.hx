@@ -211,8 +211,8 @@ class PlayState extends MusicBeatState
 	public var hitbox:mobile.Hitbox;
 	public var arrowsMode:Bool = false;
 	var savedDownScroll:Null<Bool> = null;
-	static final ARROW_CENTERS:Array<Float> = [0.2, 0.37, 0.63, 0.8];
-	static inline final ARROWS_SCALE:Float = 1;
+	static final ARROW_CENTERS:Array<Float> = [0.24, 0.4, 0.6, 0.76];
+	static inline final ARROWS_SCALE:Float = 1.5;
 	static inline final ARROWS_TOUCH_PADDING:Float = 26;
 	static inline final ARROWS_OPPONENT_SCALE:Float = 0.5;
 	static inline final ARROWS_OPPONENT_MARGIN:Float = 20;
@@ -1570,7 +1570,7 @@ class PlayState extends MusicBeatState
 			strum.updateHitbox();
 			var center:Float = FlxG.width * ARROW_CENTERS[i % ARROW_CENTERS.length];
 			strum.x = center - strum.width / 2;
-			strum.y = FlxG.height - strum.height - 24;
+			strum.y = FlxG.height - strum.height - 70;
 			strum.downScroll = true;
 			rects.push([strum.x - ARROWS_TOUCH_PADDING, strum.y - ARROWS_TOUCH_PADDING, strum.width + ARROWS_TOUCH_PADDING * 2, strum.height + ARROWS_TOUCH_PADDING * 2]);
 		}
@@ -3126,7 +3126,11 @@ class PlayState extends MusicBeatState
 		note.wasGoodHit = true;
 
 		#if mobile
-		if (!isSus && !cpuControlled) mobile.MobileAPI.haptic(note.hitCausesMiss ? mobile.MobileAPI.HAPTIC_HEAVY : mobile.MobileAPI.HAPTIC_LIGHT);
+		if (!cpuControlled)
+		{
+			if (isSus) mobile.MobileAPI.haptic(mobile.MobileAPI.HAPTIC_LIGHT, 0.07);
+			else mobile.MobileAPI.haptic(note.hitCausesMiss ? mobile.MobileAPI.HAPTIC_HEAVY : mobile.MobileAPI.HAPTIC_MEDIUM);
+		}
 		#end
 
 		if (note.hitsoundVolume > 0 && !note.hitsoundDisabled)

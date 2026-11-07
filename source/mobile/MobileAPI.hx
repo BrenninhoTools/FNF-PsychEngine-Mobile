@@ -13,7 +13,7 @@ extern "C" void psych_ios_keep_screen_on(int value);
 extern "C" int psych_ios_battery_level(void);
 extern "C" int psych_ios_is_charging(void);
 extern "C" void psych_ios_vibrate(int duration);
-extern "C" void psych_ios_haptic(int strength);
+extern "C" void psych_ios_haptic(int strength, double intensity);
 ')
 #end
 class MobileAPI
@@ -59,14 +59,21 @@ class MobileAPI
 		#end
 	}
 
-	public static function haptic(strength:Int = HAPTIC_LIGHT)
+	static var lastHapticTime:Float = -1;
+
+	public static function haptic(strength:Int = HAPTIC_LIGHT, minInterval:Float = 0)
 	{
 		if (!ClientPrefs.data.haptics) return;
+		var intensity:Float = ClientPrefs.data.hapticsIntensity;
+		if (intensity <= 0) return;
+		var now:Float = haxe.Timer.stamp();
+		if (minInterval > 0 && lastHapticTime >= 0 && now - lastHapticTime < minInterval) return;
+		lastHapticTime = now;
 		#if android
-		if (hapticMethod == null) hapticMethod = JNI.createStaticMethod(UTIL, 'haptic', '(I)V');
-		hapticMethod(strength);
+		if (hapticMethod == null) hapticMethod = JNI.createStaticMethod(UTIL, 'haptic', '(II)V');
+		hapticMethod(strength, Math.round(intensity * 100));
 		#elseif ios
-		untyped __cpp__('psych_ios_haptic({0})', strength);
+		untyped __cpp__('psych_ios_haptic({0}, {1})', strength, intensity);
 		#end
 	}
 

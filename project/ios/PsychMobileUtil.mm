@@ -65,8 +65,9 @@ extern "C" double psych_ios_total_space(void)
 	return size != nil ? [size doubleValue] : -1;
 }
 
-extern "C" void psych_ios_haptic(int strength)
+extern "C" void psych_ios_haptic(int strength, double intensity)
 {
+	if (intensity <= 0) return;
 	dispatch_async(dispatch_get_main_queue(), ^{
 		static UIImpactFeedbackGenerator *light = nil;
 		static UIImpactFeedbackGenerator *medium = nil;
@@ -77,8 +78,14 @@ extern "C" void psych_ios_haptic(int strength)
 			medium = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleMedium];
 			heavy = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleHeavy];
 		}
-		UIImpactFeedbackGenerator *generator = strength <= 0 ? light : (strength == 1 ? medium : heavy);
-		[generator impactOccurred];
+		int level = strength;
+		if (intensity >= 2.5) level++;
+		if (intensity >= 4.0) level++;
+		UIImpactFeedbackGenerator *generator = level <= 0 ? light : (level == 1 ? medium : heavy);
+		double bases[3] = { 0.35, 0.6, 0.9 };
+		double amount = MIN(1.0, bases[MAX(0, MIN(2, strength))] * intensity);
+		if (@available(iOS 13.0, *)) [generator impactOccurredWithIntensity:amount];
+		else [generator impactOccurred];
 		[generator prepare];
 	});
 }

@@ -15,6 +15,7 @@ import states.TitleState;
 	public var hitboxMode:String = 'Four Lanes';
 	public var touchCursor:Bool = true;
 	public var haptics:Bool = true;
+	public var hapticsIntensity:Float = 1.0;
 	public var hitboxInvisible:Bool = false;
 	public var hitboxOpacity:Float = 0.75;
 	public var hitboxStyle:String = 'Gradient';

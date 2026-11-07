@@ -9,9 +9,11 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +30,7 @@ public class AssetCopier
 	private static final String[] PRESERVE = { "mods/", "modsList.txt" };
 	private static final String INDEX_FILE = ".psych_asset_index";
 	private static final String TEMP_SUFFIX = ".part";
-	private static final int WORKERS = Math.max(2, Math.min(4, Runtime.getRuntime().availableProcessors()));
+	private static final int WORKERS = Math.max(2, Math.min(6, Runtime.getRuntime().availableProcessors()));
 	private static final int BUFFER_SIZE = 262144;
 	private static final long SPACE_MARGIN = 16L * 1024L * 1024L;
 
@@ -171,6 +173,16 @@ public class AssetCopier
 
 		stage = "Copying from the APK";
 		startTime = System.currentTimeMillis();
+		Collections.sort(pending, new Comparator<String>()
+		{
+			@Override
+			public int compare(String a, String b)
+			{
+				Long la = lengths.get(a);
+				Long lb = lengths.get(b);
+				return Long.compare(lb == null ? -1 : lb, la == null ? -1 : la);
+			}
+		});
 		final ConcurrentLinkedQueue<String> queue = new ConcurrentLinkedQueue<String>(pending);
 		final File root = base;
 
@@ -373,6 +385,41 @@ public class AssetCopier
 		createdDirs.add(key);
 	}
 
+	private static boolean copyDirect(AssetManager manager, String path, File temp, long expected)
+	{
+		AssetFileDescriptor descriptor = null;
+		FileInputStream input = null;
+		FileOutputStream output = null;
+		try
+		{
+			descriptor = manager.openFd(path);
+			if (descriptor.getLength() != expected) return false;
+			input = new FileInputStream(descriptor.getFileDescriptor());
+			output = new FileOutputStream(temp);
+			FileChannel source = input.getChannel();
+			FileChannel sink = output.getChannel();
+			long start = descriptor.getStartOffset();
+			long copied = 0;
+			while (copied < expected)
+			{
+				long count = source.transferTo(start + copied, expected - copied, sink);
+				if (count <= 0) break;
+				copied += count;
+			}
+			return copied == expected;
+		}
+		catch (Exception e)
+		{
+			return false;
+		}
+		finally
+		{
+			if (output != null) try { output.close(); } catch (Exception e) {}
+			if (input != null) try { input.close(); } catch (Exception e) {}
+			if (descriptor != null) try { descriptor.close(); } catch (Exception e) {}
+		}
+	}
+
 	private static boolean copyWithRetry(AssetManager manager, String path, File target, long expected, byte[] buffer)
 	{
 		for (int attempt = 0; attempt < 3; attempt++)
@@ -382,6 +429,16 @@ public class AssetCopier
 			try
 			{
 				ensureParent(target);
+
+				if (expected > 0 && copyDirect(manager, path, temp, expected))
+				{
+					written = expected;
+					bytesDone.addAndGet(expected);
+					if (temp.length() != expected) throw new IOException("Size mismatch");
+					if (target.exists() && !target.delete()) throw new IOException("Delete failed");
+					if (!temp.renameTo(target)) throw new IOException("Rename failed");
+					return true;
+				}
 
 				InputStream input = manager.open(path, AssetManager.ACCESS_STREAMING);
 				FileOutputStream output = new FileOutputStream(temp);
