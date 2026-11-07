@@ -6,7 +6,7 @@ on:
       tag:
         description: Release tag (a matching file in documents-mobile/releases is used as the notes)
         required: true
-        default: v1.0.4-patchv1
+        default: v1.0.4-patchv1.1
       prerelease:
         description: Mark as pre-release
         type: boolean
