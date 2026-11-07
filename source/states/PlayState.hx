@@ -214,6 +214,9 @@ class PlayState extends MusicBeatState
 	static final ARROW_CENTERS:Array<Float> = [0.19, 0.37, 0.63, 0.81];
 	static inline final ARROWS_SCALE:Float = 1.25;
 	static inline final ARROWS_TOUCH_PADDING:Float = 26;
+	static inline final ARROWS_OPPONENT_SCALE:Float = 0.5;
+	static inline final ARROWS_OPPONENT_MARGIN:Float = 20;
+	static inline final ARROWS_OPPONENT_SPACING:Float = 4;
 	public var pauseButton:mobile.MobileButton;
 	#end
 	public var cameraSpeed:Float = 1;
@@ -1071,11 +1074,11 @@ class PlayState extends MusicBeatState
 				if(!skipArrowStartTween)
 				{
 					notes.forEachAlive(function(note:Note) {
-						if((ClientPrefs.data.opponentStrums #if mobile && !arrowsMode #end) || note.mustPress)
+						if(ClientPrefs.data.opponentStrums || note.mustPress)
 						{
 							note.copyAlpha = false;
 							note.alpha = note.multAlpha;
-							if(ClientPrefs.data.middleScroll && !note.mustPress)
+							if(ClientPrefs.data.middleScroll && !note.mustPress #if mobile && !arrowsMode #end)
 								note.alpha *= 0.35;
 						}
 					});
@@ -1573,24 +1576,36 @@ class PlayState extends MusicBeatState
 			strum.downScroll = true;
 			rects.push([strum.x - ARROWS_TOUCH_PADDING, strum.y - ARROWS_TOUCH_PADDING, strum.width + ARROWS_TOUCH_PADDING * 2, strum.height + ARROWS_TOUCH_PADDING * 2]);
 		}
+		var nextX:Float = ARROWS_OPPONENT_MARGIN;
 		for (strum in opponentStrums.members)
-			if (strum != null) strum.visible = false;
+		{
+			if (strum == null) continue;
+			strum.scale.set(strum.scale.x * ARROWS_OPPONENT_SCALE, strum.scale.y * ARROWS_OPPONENT_SCALE);
+			strum.updateHitbox();
+			strum.x = nextX;
+			strum.y = ARROWS_OPPONENT_MARGIN;
+			strum.downScroll = false;
+			strum.visible = ClientPrefs.data.opponentStrums;
+			nextX += strum.width + ARROWS_OPPONENT_SPACING;
+		}
 		mobile.TouchInput.laneRects = rects;
 	}
 
 	function prepareArrowsNote(note:Note)
 	{
-		if (!note.mustPress)
+		if (!note.mustPress && !ClientPrefs.data.opponentStrums)
 		{
 			note.copyAlpha = false;
 			note.alpha = 0;
 			note.visible = false;
 			return;
 		}
-		note.scale.x *= ARROWS_SCALE;
-		if (!note.isSustainNote) note.scale.y *= ARROWS_SCALE;
+		var scale:Float = note.mustPress ? ARROWS_SCALE : ARROWS_OPPONENT_SCALE;
+		note.scale.x *= scale;
+		if (!note.isSustainNote) note.scale.y *= scale;
+		else if (!note.mustPress) note.flipY = false;
 		note.updateHitbox();
-		note.offsetX *= ARROWS_SCALE;
+		note.offsetX *= scale;
 	}
 	#end
 
@@ -1604,8 +1619,8 @@ class PlayState extends MusicBeatState
 			var targetAlpha:Float = 1;
 			if (player < 1)
 			{
-				if(!ClientPrefs.data.opponentStrums #if mobile || arrowsMode #end) targetAlpha = 0;
-				else if(ClientPrefs.data.middleScroll) targetAlpha = 0.35;
+				if(!ClientPrefs.data.opponentStrums) targetAlpha = 0;
+				else if(ClientPrefs.data.middleScroll #if mobile && !arrowsMode #end) targetAlpha = 0.35;
 			}
 
 			var babyArrow:StrumNote = new StrumNote(strumLineX, strumLineY, i, player);
