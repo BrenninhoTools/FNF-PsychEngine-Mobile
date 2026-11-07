@@ -204,12 +204,7 @@ class Hitbox extends FlxSpriteGroup
 				bitmap = FlxGradient.createGradientBitmapData(width, height, [0xE0FFFFFF, 0x00FFFFFF, 0x00FFFFFF, 0xE0FFFFFF], 1, 0);
 
 			default:
-				bitmap = FlxGradient.createGradientBitmapData(width, height, [0xB0FFFFFF, 0x10FFFFFF, 0x10FFFFFF, 0xB0FFFFFF], 1, 0);
-				var glow:BitmapData = FlxGradient.createGradientBitmapData(width, Std.int(height * 0.35), [0x00FFFFFF, 0x60FFFFFF], 1, 90);
-				bitmap.copyPixels(glow, glow.rect, new Point(0, height - glow.height), null, null, true);
-				glow.dispose();
-				bitmap.fillRect(new Rectangle(0, 0, 4, height), 0xFFFFFFFF);
-				bitmap.fillRect(new Rectangle(width - 4, 0, 4, height), 0xFFFFFFFF);
+				bitmap = FlxGradient.createGradientBitmapData(width, height, [0x90FFFFFF, 0x00FFFFFF, 0x00FFFFFF, 0x90FFFFFF], 1, 0);
 		}
 		return bitmap;
 	}

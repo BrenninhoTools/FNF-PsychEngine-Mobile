@@ -36,6 +36,9 @@ class TouchInput
 	static inline final SWIPE_DISTANCE:Float = 60;
 	static inline final TAP_DISTANCE:Float = 40;
 	static inline final DRAG_DISTANCE:Float = 20;
+	static inline final FLICK_DISTANCE:Float = 30;
+	static inline final FLICK_TIME:Int = 180;
+	static inline final DRAG_HAPTIC_STEP:Float = 100;
 	static inline final BEGIN:Int = 0;
 	static inline final MOVE:Int = 1;
 	static inline final END:Int = 2;
@@ -52,6 +55,8 @@ class TouchInput
 
 	static var lanePressed:Array<Bool> = [for (i in 0...LANES) false];
 	static var lanePrevious:Array<Bool> = [for (i in 0...LANES) false];
+	static var laneTapped:Array<Bool> = [for (i in 0...LANES) false];
+	static var dragHaptic:Float = 0;
 
 	static var swipeUp:Bool = false;
 	static var swipeDown:Bool = false;
@@ -152,7 +157,7 @@ class TouchInput
 	{
 		refresh();
 		var lane:Int = laneOf(key);
-		if (lane > -1) return lanePressed[lane] && !lanePrevious[lane];
+		if (lane > -1) return (lanePressed[lane] && !lanePrevious[lane]) || laneTapped[lane];
 
 		return switch (key)
 		{
@@ -379,13 +384,22 @@ class TouchInput
 	{
 		if (laneRects != null && laneRects.length > 0)
 		{
-			for (i in 0...laneRects.length)
+			var best:Int = -1;
+			var bestDistance:Float = Math.POSITIVE_INFINITY;
+			for (i in 0...Std.int(Math.min(laneRects.length, LANES)))
 			{
 				var rect:Array<Float> = laneRects[i];
-				if (rect != null && x >= rect[0] && x <= rect[0] + rect[2] && y >= rect[1] && y <= rect[1] + rect[3])
-					return i < LANES ? i : -1;
+				if (rect == null || x < rect[0] || x > rect[0] + rect[2] || y < rect[1] || y > rect[1] + rect[3]) continue;
+				var dx:Float = x - (rect[0] + rect[2] / 2);
+				var dy:Float = y - (rect[1] + rect[3] / 2);
+				var distance:Float = dx * dx + dy * dy;
+				if (distance < bestDistance)
+				{
+					bestDistance = distance;
+					best = i;
+				}
 			}
-			return -1;
+			return best;
 		}
 		var lane:Int = Std.int(x / (FlxG.width / LANES));
 		if (lane < 0) lane = 0;
@@ -480,6 +494,7 @@ class TouchInput
 		{
 			lanePrevious[i] = lanePressed[i];
 			lanePressed[i] = false;
+			laneTapped[i] = false;
 		}
 		swipeUp = swipeDown = swipeLeft = swipeRight = tap = tapConsumed = backTap = pauseTap = dragging = false;
 		touchBegan = touchEnded = 0;
@@ -500,7 +515,17 @@ class TouchInput
 				case BEGIN:
 					var button:MobileButton = buttonAt(event.x, event.y);
 					var control:FlxObject = button == null ? controlAt(event.x, event.y) : null;
-					if (button != null) button.press();
+					if (button != null)
+					{
+						button.press();
+						MobileAPI.haptic(MobileAPI.HAPTIC_LIGHT, 0.05);
+					}
+					else if (control != null && !hitboxEnabled) MobileAPI.haptic(MobileAPI.HAPTIC_LIGHT, 0.05);
+					if (hitboxEnabled && button == null && control == null)
+					{
+						var lane:Int = laneAt(event.x, event.y);
+						if (lane > -1) laneTapped[lane] = true;
+					}
 					touchBegan++;
 					points.set(event.id, {
 						id: event.id,
@@ -561,6 +586,20 @@ class TouchInput
 			}
 		}
 
+		if (dragging && !hitboxEnabled)
+		{
+			dragHaptic += Math.abs(dragY);
+			if (dragHaptic >= DRAG_HAPTIC_STEP)
+			{
+				dragHaptic %= DRAG_HAPTIC_STEP;
+				MobileAPI.haptic(MobileAPI.HAPTIC_LIGHT, 0.04);
+			}
+		}
+		else if (!dragging) dragHaptic = 0;
+
+		if (!hitboxEnabled && (swipeUp || swipeDown || swipeLeft || swipeRight || tap))
+			MobileAPI.haptic(MobileAPI.HAPTIC_LIGHT, 0.05);
+
 		#if android
 		if (FlxG.android.justReleased.BACK) backTap = pauseTap = true;
 		#end
@@ -594,7 +633,8 @@ class TouchInput
 		var dx:Float = point.x - point.startX;
 		var dy:Float = point.y - point.startY;
 		var distance:Float = Math.sqrt(dx * dx + dy * dy);
-		if (distance >= SWIPE_DISTANCE)
+		var quick:Bool = FlxG.game.ticks - point.time <= FLICK_TIME;
+		if (distance >= SWIPE_DISTANCE || (quick && distance >= FLICK_DISTANCE && !point.dragging))
 		{
 			if (Math.abs(dx) > Math.abs(dy))
 			{

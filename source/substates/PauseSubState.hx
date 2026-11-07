@@ -144,11 +144,6 @@ class PauseSubState extends MusicBeatSubstate
 
 		regenMenu();
 
-		#if mobile
-		backButton = mobile.MobileButton.back();
-		add(backButton);
-		#end
-
 		cameras = [FlxG.cameras.list[FlxG.cameras.list.length - 1]];
 
 		super.create();
@@ -162,10 +157,6 @@ class PauseSubState extends MusicBeatSubstate
 
 		return (formattedSongName != '') ? formattedSongName : formattedPauseMusic;
 	}
-
-	#if mobile
-	var backButton:mobile.MobileButton;
-	#end
 
 	var holdTime:Float = 0;
 	var cantUnpause:Float = 0.1;

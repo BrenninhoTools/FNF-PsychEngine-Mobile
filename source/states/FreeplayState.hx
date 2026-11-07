@@ -210,6 +210,7 @@ class FreeplayState extends MusicBeatState
 	function createTouchButtons()
 	{
 		backButton = mobile.MobileButton.back();
+		backButton.alpha = 0.3;
 		add(backButton);
 
 		var buttonY:Float = bottomBG.y - 56;

@@ -19,11 +19,18 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4.1.7
-
-      - uses: actions/setup-java@v4
         with:
-          distribution: zulu
-          java-version: 17
+          filter: blob:none
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /*
+            !/art/*
+            /art/icons/
+            /art/readme.txt
+            !/docs/
+
+      - name: Use Java 17
+        run: echo "JAVA_HOME=$JAVA_HOME_17_X64" >> $GITHUB_ENV
 
       - uses: nttld/setup-ndk@v1
         id: setup-ndk
@@ -137,6 +144,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4.1.7
+        with:
+          filter: blob:none
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /*
+            !/art/*
+            /art/icons/
+            /art/readme.txt
+            !/docs/
 
       - uses: krdlab/setup-haxe@master
         with:
