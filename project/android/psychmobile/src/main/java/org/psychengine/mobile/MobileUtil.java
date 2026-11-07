@@ -80,6 +80,43 @@ public class MobileUtil
 	}
 
 	@SuppressWarnings("deprecation")
+	private static Vibrator cachedVibrator = null;
+
+	private static Vibrator getVibrator()
+	{
+		if (cachedVibrator != null) return cachedVibrator;
+		Context context = Extension.mainContext;
+		if (context == null) return null;
+		try
+		{
+			Vibrator vibrator = (Vibrator)context.getSystemService(Context.VIBRATOR_SERVICE);
+			if (vibrator != null && vibrator.hasVibrator()) cachedVibrator = vibrator;
+		}
+		catch (Exception e) {}
+		return cachedVibrator;
+	}
+
+	public static void haptic(int strength)
+	{
+		Vibrator vibrator = getVibrator();
+		if (vibrator == null) return;
+		try
+		{
+			if (Build.VERSION.SDK_INT >= 29)
+			{
+				int effect = strength <= 0 ? VibrationEffect.EFFECT_TICK : (strength == 1 ? VibrationEffect.EFFECT_CLICK : VibrationEffect.EFFECT_HEAVY_CLICK);
+				vibrator.vibrate(VibrationEffect.createPredefined(effect));
+			}
+			else
+			{
+				int duration = strength <= 0 ? 12 : (strength == 1 ? 25 : 45);
+				if (Build.VERSION.SDK_INT >= 26) vibrator.vibrate(VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE));
+				else vibrator.vibrate(duration);
+			}
+		}
+		catch (Exception e) {}
+	}
+
 	public static void vibrate(int duration)
 	{
 		Context context = Extension.mainContext;

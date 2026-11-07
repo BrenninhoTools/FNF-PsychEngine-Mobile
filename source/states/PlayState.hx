@@ -211,8 +211,8 @@ class PlayState extends MusicBeatState
 	public var hitbox:mobile.Hitbox;
 	public var arrowsMode:Bool = false;
 	var savedDownScroll:Null<Bool> = null;
-	static final ARROW_CENTERS:Array<Float> = [0.19, 0.37, 0.63, 0.81];
-	static inline final ARROWS_SCALE:Float = 1.25;
+	static final ARROW_CENTERS:Array<Float> = [0.16, 0.35, 0.65, 0.84];
+	static inline final ARROWS_SCALE:Float = 1;
 	static inline final ARROWS_TOUCH_PADDING:Float = 26;
 	static inline final ARROWS_OPPONENT_SCALE:Float = 0.5;
 	static inline final ARROWS_OPPONENT_MARGIN:Float = 20;
@@ -327,9 +327,6 @@ class PlayState extends MusicBeatState
 
 		// var gameCam:FlxCamera = FlxG.camera;
 		camGame = initPsychCamera();
-		#if mobile
-		cast(camGame, backend.PsychCamera).wideZoom = true;
-		#end
 		camHUD = new backend.PsychCamera();
 		camOther = new backend.PsychCamera();
 		camHUD.bgColor.alpha = 0;
@@ -2983,6 +2980,9 @@ class PlayState extends MusicBeatState
 
 	function noteMissCommon(direction:Int, note:Note = null)
 	{
+		#if mobile
+		if (!cpuControlled && (note == null || !note.isSustainNote)) mobile.MobileAPI.haptic(mobile.MobileAPI.HAPTIC_MEDIUM);
+		#end
 		// score and data
 		var subtract:Float = pressMissDamage;
 		if(note != null) subtract = note.missHealth;
@@ -3125,6 +3125,10 @@ class PlayState extends MusicBeatState
 		if(result == LuaUtils.Function_Stop) return;
 
 		note.wasGoodHit = true;
+
+		#if mobile
+		if (!isSus && !cpuControlled) mobile.MobileAPI.haptic(note.hitCausesMiss ? mobile.MobileAPI.HAPTIC_HEAVY : mobile.MobileAPI.HAPTIC_LIGHT);
+		#end
 
 		if (note.hitsoundVolume > 0 && !note.hitsoundDisabled)
 			FlxG.sound.play(Paths.sound(note.hitsound), note.hitsoundVolume);

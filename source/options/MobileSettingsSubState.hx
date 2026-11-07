@@ -25,10 +25,17 @@ class MobileSettingsSubState extends BaseOptionsMenu
 		addOption(option);
 
 		var option:Option = new Option('Hitbox Mode:',
-			'Four Lanes: the screen is split into four touch lanes.\nArrows: tap the arrows at the bottom of the screen, opponent notes are hidden.',
+			'Four Lanes: the screen is split into four touch lanes.\nArrows: tap the arrows at the bottom of the screen, opponent notes are shown small in the top-left corner.',
 			'hitboxMode',
 			STRING,
 			['Four Lanes', 'Arrows']);
+		addOption(option);
+
+		var option:Option = new Option('Haptics',
+			'If checked, the phone vibrates lightly when you hit a note\nand a bit stronger when you miss.',
+			'haptics',
+			BOOL);
+		option.onChange = function() if (ClientPrefs.data.haptics) mobile.MobileAPI.haptic(mobile.MobileAPI.HAPTIC_MEDIUM);
 		addOption(option);
 
 		var option:Option = new Option('Touch Cursor',
@@ -67,7 +74,7 @@ class MobileSettingsSubState extends BaseOptionsMenu
 		addOption(option);
 
 		var option:Option = new Option('Screen Style:',
-			'Original: the classic 16:9 screen with black bars on wide phones.\nFull: fills the whole screen without stretching, showing more of the game on the sides.',
+			'Original: the classic 16:9 screen with black bars on wide phones.\nFull: fills the whole screen with no stretching or zoom, showing more of the game on the sides.',
 			'screenStyle',
 			STRING,
 			['Original', 'Full']);

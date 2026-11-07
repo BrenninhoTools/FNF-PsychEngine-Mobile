@@ -13,6 +13,7 @@ extern "C" void psych_ios_keep_screen_on(int value);
 extern "C" int psych_ios_battery_level(void);
 extern "C" int psych_ios_is_charging(void);
 extern "C" void psych_ios_vibrate(int duration);
+extern "C" void psych_ios_haptic(int strength);
 ')
 #end
 class MobileAPI
@@ -20,8 +21,14 @@ class MobileAPI
 	static final LANE_KEYS:Array<String> = ['note_left', 'note_down', 'note_up', 'note_right'];
 	static final SWIPES:Map<String, String> = ['up' => 'ui_up', 'down' => 'ui_down', 'left' => 'ui_left', 'right' => 'ui_right'];
 
+	public static inline final HAPTIC_LIGHT:Int = 0;
+	public static inline final HAPTIC_MEDIUM:Int = 1;
+	public static inline final HAPTIC_HEAVY:Int = 2;
+
 	#if android
 	static inline final UTIL:String = 'org/psychengine/mobile/MobileUtil';
+	static var hapticMethod:Dynamic = null;
+	static var vibrateMethod:Dynamic = null;
 	#end
 
 	static var pad:VirtualPad;
@@ -45,9 +52,21 @@ class MobileAPI
 	public static function vibrate(duration:Int = 100)
 	{
 		#if android
-		JNI.createStaticMethod(UTIL, 'vibrate', '(I)V')(duration);
+		if (vibrateMethod == null) vibrateMethod = JNI.createStaticMethod(UTIL, 'vibrate', '(I)V');
+		vibrateMethod(duration);
 		#elseif ios
 		untyped __cpp__('psych_ios_vibrate({0})', duration);
+		#end
+	}
+
+	public static function haptic(strength:Int = HAPTIC_LIGHT)
+	{
+		if (!ClientPrefs.data.haptics) return;
+		#if android
+		if (hapticMethod == null) hapticMethod = JNI.createStaticMethod(UTIL, 'haptic', '(I)V');
+		hapticMethod(strength);
+		#elseif ios
+		untyped __cpp__('psych_ios_haptic({0})', strength);
 		#end
 	}
 

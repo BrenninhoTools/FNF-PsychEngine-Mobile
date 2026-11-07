@@ -64,3 +64,21 @@ extern "C" double psych_ios_total_space(void)
 	NSNumber *size = psych_ios_fs_attributes()[NSFileSystemSize];
 	return size != nil ? [size doubleValue] : -1;
 }
+
+extern "C" void psych_ios_haptic(int strength)
+{
+	dispatch_async(dispatch_get_main_queue(), ^{
+		static UIImpactFeedbackGenerator *light = nil;
+		static UIImpactFeedbackGenerator *medium = nil;
+		static UIImpactFeedbackGenerator *heavy = nil;
+		if (light == nil)
+		{
+			light = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleLight];
+			medium = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleMedium];
+			heavy = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleHeavy];
+		}
+		UIImpactFeedbackGenerator *generator = strength <= 0 ? light : (strength == 1 ? medium : heavy);
+		[generator impactOccurred];
+		[generator prepare];
+	});
+}
