@@ -204,7 +204,7 @@ class Hitbox extends FlxSpriteGroup
 				bitmap = FlxGradient.createGradientBitmapData(width, height, [0xE0FFFFFF, 0x00FFFFFF, 0x00FFFFFF, 0xE0FFFFFF], 1, 0);
 
 			default:
-				bitmap = FlxGradient.createGradientBitmapData(width, height, [0x90FFFFFF, 0x00FFFFFF, 0x00FFFFFF, 0x90FFFFFF], 1, 0);
+				bitmap = new BitmapData(width, height, true, 0x60FFFFFF);
 		}
 		return bitmap;
 	}

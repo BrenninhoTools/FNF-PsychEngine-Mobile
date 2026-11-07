@@ -158,6 +158,11 @@ class PauseSubState extends MusicBeatSubstate
 		return (formattedSongName != '') ? formattedSongName : formattedPauseMusic;
 	}
 
+	#if mobile
+	static inline final DRAG_STEP:Float = 90;
+	var dragAccum:Float = 0;
+	#end
+
 	var holdTime:Float = 0;
 	var cantUnpause:Float = 0.1;
 	override function update(elapsed:Float)
@@ -193,6 +198,22 @@ class PauseSubState extends MusicBeatSubstate
 			if (tapped == curSelected) touchAccept = true;
 			else changeSelection(tapped - curSelected);
 		}
+
+		if (menuItems.length > 1 && mobile.TouchInput.isDragging())
+		{
+			dragAccum += mobile.TouchInput.dragDeltaY();
+			while (dragAccum >= DRAG_STEP)
+			{
+				dragAccum -= DRAG_STEP;
+				changeSelection(-1);
+			}
+			while (dragAccum <= -DRAG_STEP)
+			{
+				dragAccum += DRAG_STEP;
+				changeSelection(1);
+			}
+		}
+		else dragAccum = 0;
 		#end
 
 		if (controls.UI_UP_P)
