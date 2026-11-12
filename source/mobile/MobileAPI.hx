@@ -5,6 +5,10 @@ import flixel.input.keyboard.FlxKey;
 import openfl.events.KeyboardEvent;
 #if android
 import lime.system.JNI;
+import extension.haptics.android.HapticAndroid;
+#end
+#if mobile
+import extension.haptics.Haptic;
 #end
 
 #if ios
@@ -12,8 +16,6 @@ import lime.system.JNI;
 extern "C" void psych_ios_keep_screen_on(int value);
 extern "C" int psych_ios_battery_level(void);
 extern "C" int psych_ios_is_charging(void);
-extern "C" void psych_ios_vibrate(int duration);
-extern "C" void psych_ios_haptic(int strength, double intensity);
 ')
 #end
 class MobileAPI
@@ -27,8 +29,6 @@ class MobileAPI
 
 	#if android
 	static inline final UTIL:String = 'org/psychengine/mobile/MobileUtil';
-	static var hapticMethod:Dynamic = null;
-	static var vibrateMethod:Dynamic = null;
 	#end
 
 	static var pad:VirtualPad;
@@ -51,15 +51,37 @@ class MobileAPI
 
 	public static function vibrate(duration:Int = 100)
 	{
-		#if android
-		if (vibrateMethod == null) vibrateMethod = JNI.createStaticMethod(UTIL, 'vibrate', '(I)V');
-		vibrateMethod(duration);
-		#elseif ios
-		untyped __cpp__('psych_ios_vibrate({0})', duration);
+		#if mobile
+		if (duration <= 0 || !initHaptics()) return;
+		Haptic.vibrateOneShot(duration / 1000, 1, 0.5);
 		#end
 	}
 
+	static final HAPTIC_AMPLITUDES:Array<Float> = [0.3, 0.55, 0.85];
+	static final HAPTIC_DURATIONS:Array<Float> = [0.012, 0.022, 0.04];
+	static final HAPTIC_SHARPNESS:Array<Float> = [0.9, 0.7, 0.45];
+	#if android
+	static final HAPTIC_PRIMITIVES:Array<Array<Int>> = [[7], [1], [1, 2]];
+	static var primitivesSupported:Null<Bool> = null;
+	#end
+	static var hapticsReady:Bool = false;
 	static var lastHapticTime:Float = -1;
+
+	#if mobile
+	static function initHaptics():Bool
+	{
+		if (!hapticsReady)
+		{
+			hapticsReady = true;
+			try
+			{
+				Haptic.initialize();
+			}
+			catch (e:Dynamic) {}
+		}
+		return true;
+	}
+	#end
 
 	public static function haptic(strength:Int = HAPTIC_LIGHT, minInterval:Float = 0)
 	{
@@ -69,11 +91,26 @@ class MobileAPI
 		var now:Float = haxe.Timer.stamp();
 		if (minInterval > 0 && lastHapticTime >= 0 && now - lastHapticTime < minInterval) return;
 		lastHapticTime = now;
-		#if android
-		if (hapticMethod == null) hapticMethod = JNI.createStaticMethod(UTIL, 'haptic', '(II)V');
-		hapticMethod(strength, Math.round(intensity * 100));
-		#elseif ios
-		untyped __cpp__('psych_ios_haptic({0}, {1})', strength, intensity);
+		#if mobile
+		initHaptics();
+		var index:Int = strength < 0 ? 0 : (strength > 2 ? 2 : strength);
+		var amount:Float = Math.min(1, HAPTIC_AMPLITUDES[index] * intensity);
+		var duration:Float = HAPTIC_DURATIONS[index] * (intensity <= 1 ? 1 : 1 + (intensity - 1) * 0.25);
+		try
+		{
+			#if android
+			if (primitivesSupported == null)
+				primitivesSupported = HapticAndroid.isPrimitiveSupported(1) && HapticAndroid.isPrimitiveSupported(2) && HapticAndroid.isPrimitiveSupported(7);
+			if (primitivesSupported)
+			{
+				var ids:Array<Int> = HAPTIC_PRIMITIVES[index];
+				HapticAndroid.vibratePredefined(ids, [for (id in ids) amount], [for (id in ids) 0]);
+				return;
+			}
+			#end
+			Haptic.vibrateOneShot(duration, amount, HAPTIC_SHARPNESS[index]);
+		}
+		catch (e:Dynamic) {}
 		#end
 	}
 

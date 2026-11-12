@@ -56,6 +56,15 @@ class TouchInput
 	static var lanePressed:Array<Bool> = [for (i in 0...LANES) false];
 	static var lanePrevious:Array<Bool> = [for (i in 0...LANES) false];
 	static var laneTapped:Array<Bool> = [for (i in 0...LANES) false];
+	static var directPending:Array<Bool> = [for (i in 0...LANES) false];
+	static var directHandled:Array<Bool> = [for (i in 0...LANES) false];
+
+	public static var onLanePress:Int->Void = null;
+
+	public static function laneHandledDirectly(lane:Int):Bool
+	{
+		return lane >= 0 && lane < LANES && directHandled[lane];
+	}
 	static var dragHaptic:Float = 0;
 
 	static var swipeUp:Bool = false;
@@ -457,6 +466,15 @@ class TouchInput
 		if (activeTouches == 0) primaryBlocked = onControl;
 		activeTouches++;
 		pending.push({type: BEGIN, id: e.touchPointID, x: x, y: y});
+		if (hitboxEnabled && !onControl && onLanePress != null)
+		{
+			var lane:Int = laneAt(x, y);
+			if (lane > -1 && !directPending[lane])
+			{
+				directPending[lane] = true;
+				onLanePress(lane);
+			}
+		}
 	}
 
 	static function onTouchMove(e:TouchEvent)
@@ -495,6 +513,8 @@ class TouchInput
 			lanePrevious[i] = lanePressed[i];
 			lanePressed[i] = false;
 			laneTapped[i] = false;
+			directHandled[i] = directPending[i];
+			directPending[i] = false;
 		}
 		swipeUp = swipeDown = swipeLeft = swipeRight = tap = tapConsumed = backTap = pauseTap = dragging = false;
 		touchBegan = touchEnded = 0;

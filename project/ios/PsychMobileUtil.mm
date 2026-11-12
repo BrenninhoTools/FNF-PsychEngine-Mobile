@@ -26,19 +26,6 @@ extern "C" int psych_ios_is_charging(void)
 	return state == UIDeviceBatteryStateCharging || state == UIDeviceBatteryStateFull ? 1 : 0;
 }
 
-extern "C" void psych_ios_vibrate(int duration)
-{
-	dispatch_async(dispatch_get_main_queue(), ^{
-		if (duration >= 300) AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
-		else
-		{
-			UIImpactFeedbackGenerator *generator = [[UIImpactFeedbackGenerator alloc] initWithStyle:duration >= 120 ? UIImpactFeedbackStyleHeavy : UIImpactFeedbackStyleMedium];
-			[generator prepare];
-			[generator impactOccurred];
-		}
-	});
-}
-
 static NSDictionary *psych_ios_fs_attributes(void)
 {
 	NSString *path = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
@@ -63,29 +50,4 @@ extern "C" double psych_ios_total_space(void)
 {
 	NSNumber *size = psych_ios_fs_attributes()[NSFileSystemSize];
 	return size != nil ? [size doubleValue] : -1;
-}
-
-extern "C" void psych_ios_haptic(int strength, double intensity)
-{
-	if (intensity <= 0) return;
-	dispatch_async(dispatch_get_main_queue(), ^{
-		static UIImpactFeedbackGenerator *light = nil;
-		static UIImpactFeedbackGenerator *medium = nil;
-		static UIImpactFeedbackGenerator *heavy = nil;
-		if (light == nil)
-		{
-			light = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleLight];
-			medium = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleMedium];
-			heavy = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleHeavy];
-		}
-		int level = strength;
-		if (intensity >= 2.5) level++;
-		if (intensity >= 4.0) level++;
-		UIImpactFeedbackGenerator *generator = level <= 0 ? light : (level == 1 ? medium : heavy);
-		double bases[3] = { 0.35, 0.6, 0.9 };
-		double amount = MIN(1.0, bases[MAX(0, MIN(2, strength))] * intensity);
-		if (@available(iOS 13.0, *)) [generator impactOccurredWithIntensity:amount];
-		else [generator impactOccurred];
-		[generator prepare];
-	});
 }

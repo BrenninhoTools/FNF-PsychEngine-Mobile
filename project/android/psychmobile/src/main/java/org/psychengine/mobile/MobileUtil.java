@@ -6,8 +6,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.BatteryManager;
 import android.os.Build;
-import android.os.VibrationEffect;
-import android.os.Vibrator;
 import android.view.WindowManager;
 import android.widget.Toast;
 import org.haxe.extension.Extension;
@@ -77,61 +75,5 @@ public class MobileUtil
 		{
 			return false;
 		}
-	}
-
-	@SuppressWarnings("deprecation")
-	private static Vibrator cachedVibrator = null;
-
-	private static Vibrator getVibrator()
-	{
-		if (cachedVibrator != null) return cachedVibrator;
-		Context context = Extension.mainContext;
-		if (context == null) return null;
-		try
-		{
-			Vibrator vibrator = (Vibrator)context.getSystemService(Context.VIBRATOR_SERVICE);
-			if (vibrator != null && vibrator.hasVibrator()) cachedVibrator = vibrator;
-		}
-		catch (Exception e) {}
-		return cachedVibrator;
-	}
-
-	private static final int[] HAPTIC_DURATIONS = { 12, 22, 40 };
-	private static final int[] HAPTIC_AMPLITUDES = { 70, 140, 220 };
-
-	public static void haptic(int strength, int intensityPercent)
-	{
-		if (intensityPercent <= 0) return;
-		Vibrator vibrator = getVibrator();
-		if (vibrator == null) return;
-		int index = Math.max(0, Math.min(2, strength));
-		float intensity = intensityPercent / 100f;
-		int duration = Math.round(HAPTIC_DURATIONS[index] * (intensity <= 1 ? 1 : 1 + (intensity - 1) * 0.25f));
-		try
-		{
-			if (Build.VERSION.SDK_INT >= 26)
-			{
-				int amplitude = VibrationEffect.DEFAULT_AMPLITUDE;
-				if (vibrator.hasAmplitudeControl()) amplitude = Math.max(1, Math.min(255, Math.round(HAPTIC_AMPLITUDES[index] * intensity)));
-				else duration = Math.max(5, Math.round(HAPTIC_DURATIONS[index] * Math.max(0.4f, intensity)));
-				vibrator.vibrate(VibrationEffect.createOneShot(duration, amplitude));
-			}
-			else vibrator.vibrate(Math.max(5, Math.round(HAPTIC_DURATIONS[index] * Math.max(0.4f, intensity))));
-		}
-		catch (Exception e) {}
-	}
-
-	public static void vibrate(int duration)
-	{
-		Context context = Extension.mainContext;
-		if (context == null || duration <= 0) return;
-		try
-		{
-			Vibrator vibrator = (Vibrator)context.getSystemService(Context.VIBRATOR_SERVICE);
-			if (vibrator == null || !vibrator.hasVibrator()) return;
-			if (Build.VERSION.SDK_INT >= 26) vibrator.vibrate(VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE));
-			else vibrator.vibrate(duration);
-		}
-		catch (Exception e) {}
 	}
 }

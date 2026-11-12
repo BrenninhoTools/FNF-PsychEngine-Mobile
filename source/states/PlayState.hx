@@ -637,6 +637,12 @@ class PlayState extends MusicBeatState
 
 		#if mobile
 		hitbox = new mobile.Hitbox();
+		mobile.TouchInput.onLanePress = function(lane:Int)
+		{
+			if (strumsBlocked[lane] == true) return;
+			controls.controllerMode = true;
+			keyPressed(lane);
+		};
 		hitbox.cameras = [camOther];
 		if (arrowsMode) hitbox.visible = false;
 		add(hitbox);
@@ -2917,7 +2923,7 @@ class PlayState extends MusicBeatState
 		// TO DO: Find a better way to handle controller inputs, this should work for now
 		if(controls.controllerMode && pressArray.contains(true))
 			for (i in 0...pressArray.length)
-				if(pressArray[i] && strumsBlocked[i] != true)
+				if(pressArray[i] && strumsBlocked[i] != true #if mobile && !mobile.TouchInput.laneHandledDirectly(i) #end)
 					keyPressed(i);
 
 		if (startedCountdown && !inCutscene && !boyfriend.stunned && generatedMusic)
@@ -3242,6 +3248,7 @@ class PlayState extends MusicBeatState
 
 	override function destroy() {
 		#if mobile
+		mobile.TouchInput.onLanePress = null;
 		if (savedDownScroll != null)
 		{
 			ClientPrefs.data.downScroll = savedDownScroll;
