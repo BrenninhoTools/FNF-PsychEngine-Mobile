@@ -1,7 +1,7 @@
 package states.editors;
 
 #if mobile
-import mobile.MobileFileReference as FileReference;
+import mobile.native.MobileFileReference as FileReference;
 #else
 import openfl.net.FileReference;
 #end
@@ -143,7 +143,7 @@ class DialogueCharacterEditorState extends MusicBeatState implements PsychUIEven
 		
 		super.create();
 		#if mobile
-		add(new mobile.EditorPad(['ESCAPE SPACE H R Q E', 'W A S D I J K L', 'SHIFT LEFT DOWN UP RIGHT']));
+		add(new mobile.controls.EditorPad(['ESCAPE SPACE H R Q E', 'W A S D I J K L', 'SHIFT LEFT DOWN UP RIGHT']));
 		#end
 	}
 

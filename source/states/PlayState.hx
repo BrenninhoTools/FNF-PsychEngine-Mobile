@@ -208,7 +208,7 @@ class PlayState extends MusicBeatState
 	public var camGame:FlxCamera;
 	public var camOther:FlxCamera;
 	#if mobile
-	public var hitbox:mobile.Hitbox;
+	public var hitbox:mobile.controls.Hitbox;
 	public var arrowsMode:Bool = false;
 	var savedDownScroll:Null<Bool> = null;
 	static final ARROW_CENTERS:Array<Float> = [0.24, 0.4, 0.6, 0.76];
@@ -218,7 +218,7 @@ class PlayState extends MusicBeatState
 	static inline final ARROWS_OPPONENT_MARGIN:Float = 20;
 	static inline final ARROWS_OPPONENT_TOP:Float = 55;
 	static inline final ARROWS_OPPONENT_SPACING:Float = 4;
-	public var pauseButton:mobile.MobileButton;
+	public var pauseButton:mobile.controls.MobileButton;
 	#end
 	public var cameraSpeed:Float = 1;
 
@@ -636,8 +636,8 @@ class PlayState extends MusicBeatState
 		FlxG.stage.addEventListener(KeyboardEvent.KEY_UP, onKeyRelease);
 
 		#if mobile
-		hitbox = new mobile.Hitbox();
-		mobile.TouchInput.onLanePress = function(lane:Int)
+		hitbox = new mobile.controls.Hitbox();
+		mobile.input.TouchInput.onLanePress = function(lane:Int)
 		{
 			if (strumsBlocked[lane] == true) return;
 			controls.controllerMode = true;
@@ -647,7 +647,7 @@ class PlayState extends MusicBeatState
 		if (arrowsMode) hitbox.visible = false;
 		add(hitbox);
 
-		pauseButton = mobile.MobileButton.pause(camOther);
+		pauseButton = mobile.controls.MobileButton.pause(camOther);
 		pauseButton.alpha = ClientPrefs.data.pauseButtonInvisible ? 0 : 0.6;
 		add(pauseButton);
 		#end
@@ -1592,7 +1592,7 @@ class PlayState extends MusicBeatState
 			strum.visible = ClientPrefs.data.opponentStrums;
 			nextX += strum.width + ARROWS_OPPONENT_SPACING;
 		}
-		mobile.TouchInput.laneRects = rects;
+		mobile.input.TouchInput.laneRects = rects;
 	}
 
 	function prepareArrowsNote(note:Note)
@@ -1645,9 +1645,9 @@ class PlayState extends MusicBeatState
 					if(i > 1) { //Up and Right
 						babyArrow.x += FlxG.width / 2 + 25;
 					}
-					else babyArrow.x += mobile.WideScreen.offset;
+					else babyArrow.x += mobile.screen.WideScreen.offset;
 				}
-				else babyArrow.x += mobile.WideScreen.offset;
+				else babyArrow.x += mobile.screen.WideScreen.offset;
 				opponentStrums.add(babyArrow);
 			}
 
@@ -2923,7 +2923,7 @@ class PlayState extends MusicBeatState
 		// TO DO: Find a better way to handle controller inputs, this should work for now
 		if(controls.controllerMode && pressArray.contains(true))
 			for (i in 0...pressArray.length)
-				if(pressArray[i] && strumsBlocked[i] != true #if mobile && !mobile.TouchInput.laneHandledDirectly(i) #end)
+				if(pressArray[i] && strumsBlocked[i] != true #if mobile && !mobile.input.TouchInput.laneHandledDirectly(i) #end)
 					keyPressed(i);
 
 		if (startedCountdown && !inCutscene && !boyfriend.stunned && generatedMusic)
@@ -3248,7 +3248,7 @@ class PlayState extends MusicBeatState
 
 	override function destroy() {
 		#if mobile
-		mobile.TouchInput.onLanePress = null;
+		mobile.input.TouchInput.onLanePress = null;
 		if (savedDownScroll != null)
 		{
 			ClientPrefs.data.downScroll = savedDownScroll;

@@ -10,7 +10,7 @@ import flixel.input.keyboard.FlxKey;
 import openfl.events.Event;
 import openfl.events.IOErrorEvent;
 #if mobile
-import mobile.MobileFileReference as FileReference;
+import mobile.native.MobileFileReference as FileReference;
 #else
 import openfl.net.FileReference;
 #end
@@ -53,7 +53,7 @@ class NoteSplashEditorState extends MusicBeatState
         bg.scrollFactor.set();
         bg.color = 0xFF505050;
         add(bg);      
-        mobile.WideScreen.fit(bg);
+        mobile.screen.WideScreen.fit(bg);
 
         UI = new PsychUIBox(0, 0, 0, 0, ["Animation"]);
         UI.canMove = UI.canMinimize = false;
@@ -124,7 +124,7 @@ class NoteSplashEditorState extends MusicBeatState
 
         super.create();
         #if mobile
-        add(new mobile.EditorPad(['ESCAPE SPACE F1 R', 'CONTROL C V SHIFT LEFT DOWN UP RIGHT']));
+        add(new mobile.controls.EditorPad(['ESCAPE SPACE F1 R', 'CONTROL C V SHIFT LEFT DOWN UP RIGHT']));
         #end
     }
 

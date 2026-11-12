@@ -191,17 +191,17 @@ class PauseSubState extends MusicBeatSubstate
 
 		var touchAccept:Bool = false;
 		#if mobile
-		var tapped:Int = mobile.TouchInput.tappedRow(cast grpMenuShit.members);
-		mobile.TouchInput.consumeTap();
+		var tapped:Int = mobile.input.TouchInput.tappedRow(cast grpMenuShit.members);
+		mobile.input.TouchInput.consumeTap();
 		if (tapped > -1)
 		{
 			if (tapped == curSelected) touchAccept = true;
 			else changeSelection(tapped - curSelected);
 		}
 
-		if (menuItems.length > 1 && mobile.TouchInput.isDragging())
+		if (menuItems.length > 1 && mobile.input.TouchInput.isDragging())
 		{
-			dragAccum += mobile.TouchInput.dragDeltaY();
+			dragAccum += mobile.input.TouchInput.dragDeltaY();
 			while (dragAccum >= DRAG_STEP)
 			{
 				dragAccum -= DRAG_STEP;

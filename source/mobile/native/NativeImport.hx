@@ -1,4 +1,4 @@
-package mobile;
+package mobile.native;
 
 #if android
 import lime.system.JNI;

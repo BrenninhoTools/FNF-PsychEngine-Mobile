@@ -100,7 +100,7 @@ class EditorPlayState extends MusicBeatSubstate
 		bg.color = 0xFF101010;
 		bg.alpha = 0.9;
 		add(bg);
-		mobile.WideScreen.fit(bg);
+		mobile.screen.WideScreen.fit(bg);
 		
 		/**** NOTES ****/
 		comboGroup = new FlxSpriteGroup();
@@ -159,11 +159,11 @@ class EditorPlayState extends MusicBeatSubstate
 		cameras = [FlxG.cameras.list[FlxG.cameras.list.length - 1]];
 
 		#if mobile
-		if (mobile.EditorPad.current != null) mobile.EditorPad.current.setSuspended(true);
-		var hitbox:mobile.Hitbox = new mobile.Hitbox();
+		if (mobile.controls.EditorPad.current != null) mobile.controls.EditorPad.current.setSuspended(true);
+		var hitbox:mobile.controls.Hitbox = new mobile.controls.Hitbox();
 		hitbox.cameras = cameras;
 		add(hitbox);
-		var backButton:mobile.MobileButton = mobile.MobileButton.back(null, true);
+		var backButton:mobile.controls.MobileButton = mobile.controls.MobileButton.back(null, true);
 		backButton.cameras = cameras;
 		add(backButton);
 		#end
@@ -279,7 +279,7 @@ class EditorPlayState extends MusicBeatSubstate
 		FlxG.stage.removeEventListener(KeyboardEvent.KEY_DOWN, onKeyPress);
 		FlxG.stage.removeEventListener(KeyboardEvent.KEY_UP, onKeyRelease);
 		#if mobile
-		if (mobile.EditorPad.current != null) mobile.EditorPad.current.setSuspended(false);
+		if (mobile.controls.EditorPad.current != null) mobile.controls.EditorPad.current.setSuspended(false);
 		#end
 		FlxG.mouse.visible = true;
 		NoteSplash.configs.clear();

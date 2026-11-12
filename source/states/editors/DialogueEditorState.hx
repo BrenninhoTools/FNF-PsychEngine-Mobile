@@ -1,7 +1,7 @@
 package states.editors;
 
 #if mobile
-import mobile.MobileFileReference as FileReference;
+import mobile.native.MobileFileReference as FileReference;
 #else
 import openfl.net.FileReference;
 #end
@@ -89,7 +89,7 @@ class DialogueEditorState extends MusicBeatState implements PsychUIEventHandler.
 		changeText();
 		super.create();
 		#if mobile
-		add(new mobile.EditorPad(['ESCAPE SPACE O P', 'W A S D']));
+		add(new mobile.controls.EditorPad(['ESCAPE SPACE O P', 'W A S D']));
 		#end
 	}
 

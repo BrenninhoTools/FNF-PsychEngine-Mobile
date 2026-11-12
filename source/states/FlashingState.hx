@@ -60,15 +60,15 @@ class FlashingState extends MusicBeatState
 			updateItems();
 		}
 		#if mobile
-		mobile.TouchInput.blockGestures = true;
-		if (mobile.TouchInput.justSwiped('ui_left') || mobile.TouchInput.justSwiped('ui_right')) {
+		mobile.input.TouchInput.blockGestures = true;
+		if (mobile.input.TouchInput.justSwiped('ui_left') || mobile.input.TouchInput.justSwiped('ui_right')) {
 			FlxG.sound.play(Paths.sound("scrollMenu"), 0.7);
 			isYes = !isYes;
 			updateItems();
 		}
-		if (texts.alpha >= 1 && mobile.TouchInput.justTapped()) {
+		if (texts.alpha >= 1 && mobile.input.TouchInput.justTapped()) {
 			for (i in 0...2) {
-				if (tappedOption(texts.members[i + 1], mobile.TouchInput.tapX, mobile.TouchInput.tapY)) {
+				if (tappedOption(texts.members[i + 1], mobile.input.TouchInput.tapX, mobile.input.TouchInput.tapY)) {
 					isYes = i == 0;
 					updateItems();
 					accept = true;
@@ -79,7 +79,7 @@ class FlashingState extends MusicBeatState
 		#end
 		if (accept || back) {
 			#if mobile
-			mobile.TouchInput.blockGestures = false;
+			mobile.input.TouchInput.blockGestures = false;
 			#end
 			leftState = true;
 			FlxTransitionableState.skipNextTransIn = true;

@@ -62,7 +62,7 @@ class MainMenuState extends MusicBeatState
 		bg.updateHitbox();
 		bg.screenCenter();
 		add(bg);
-		mobile.WideScreen.fit(bg);
+		mobile.screen.WideScreen.fit(bg);
 
 		camFollow = new FlxObject(0, 0, 1, 1);
 		add(camFollow);
@@ -76,7 +76,7 @@ class MainMenuState extends MusicBeatState
 		magenta.visible = false;
 		magenta.color = 0xFFfd719b;
 		add(magenta);
-		mobile.WideScreen.fit(magenta);
+		mobile.screen.WideScreen.fit(magenta);
 
 		menuItems = new FlxTypedGroup<FlxSprite>();
 		add(menuItems);
@@ -128,9 +128,9 @@ class MainMenuState extends MusicBeatState
 		FlxG.camera.follow(camFollow, null, 0.15);
 
 		#if mobile
-		var backButton:mobile.MobileButton = mobile.MobileButton.back(null, true);
+		var backButton:mobile.controls.MobileButton = mobile.controls.MobileButton.back(null, true);
 		add(backButton);
-		editorsButton = new mobile.ImageButton(16, 50, 'editorButton', 0.6);
+		editorsButton = new mobile.controls.ImageButton(16, 50, 'editorButton', 0.6);
 		add(editorsButton);
 		#end
 	}
@@ -152,7 +152,7 @@ class MainMenuState extends MusicBeatState
 
 	var selectedSomethin:Bool = false;
 	#if mobile
-	var editorsButton:mobile.ImageButton;
+	var editorsButton:mobile.controls.ImageButton;
 	#end
 
 	var timeNotMoving:Float = 0;
@@ -269,9 +269,9 @@ class MainMenuState extends MusicBeatState
 
 			var touchAccept:Bool = false;
 			#if mobile
-			if (mobile.TouchInput.justTapped())
+			if (mobile.input.TouchInput.justTapped())
 			{
-				mobile.TouchInput.consumeTap();
+				mobile.input.TouchInput.consumeTap();
 				var selectedItem:FlxSprite = switch(curColumn)
 				{
 					case CENTER: menuItems.members[curSelected];
@@ -280,12 +280,12 @@ class MainMenuState extends MusicBeatState
 				}
 
 				var tappedItem:FlxSprite = null;
-				if (leftItem != null && mobile.TouchInput.tappedOn(leftItem))
+				if (leftItem != null && mobile.input.TouchInput.tappedOn(leftItem))
 				{
 					tappedItem = leftItem;
 					if (tappedItem != selectedItem) curColumn = LEFT;
 				}
-				else if (rightItem != null && mobile.TouchInput.tappedOn(rightItem))
+				else if (rightItem != null && mobile.input.TouchInput.tappedOn(rightItem))
 				{
 					tappedItem = rightItem;
 					if (tappedItem != selectedItem) curColumn = RIGHT;
@@ -294,7 +294,7 @@ class MainMenuState extends MusicBeatState
 				{
 					for (i in 0...optionShit.length)
 					{
-						if (mobile.TouchInput.tappedOn(menuItems.members[i]))
+						if (mobile.input.TouchInput.tappedOn(menuItems.members[i]))
 						{
 							tappedItem = menuItems.members[i];
 							if (tappedItem != selectedItem)

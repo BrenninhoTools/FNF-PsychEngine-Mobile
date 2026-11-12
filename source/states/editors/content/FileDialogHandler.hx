@@ -184,7 +184,7 @@ class FileDialogHandler extends FlxBasic
 }
 
 //Only way I could find to keep the path after saving a file
-class FileReferenceCustom extends #if mobile mobile.MobileFileReference #else FileReference #end
+class FileReferenceCustom extends #if mobile mobile.native.MobileFileReference #else FileReference #end
 {
 	@:allow(backend.FileDialogHandler)
 	var _trackSavedPath:String;

@@ -1,4 +1,4 @@
-package mobile;
+package mobile.screen;
 
 import flixel.system.scaleModes.RatioScaleMode;
 

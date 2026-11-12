@@ -4,7 +4,7 @@ import backend.WeekData;
 
 import openfl.utils.Assets;
 #if mobile
-import mobile.MobileFileReference as FileReference;
+import mobile.native.MobileFileReference as FileReference;
 #else
 import openfl.net.FileReference;
 #end
@@ -105,7 +105,7 @@ class WeekEditorState extends MusicBeatState implements PsychUIEventHandler.Psyc
 
 		super.create();
 		#if mobile
-		add(new mobile.EditorPad(['ESCAPE UP DOWN']));
+		add(new mobile.controls.EditorPad(['ESCAPE UP DOWN']));
 		#end
 	}
 
@@ -568,7 +568,7 @@ class WeekEditorFreeplayState extends MusicBeatState implements PsychUIEventHand
 		bg.antialiasing = ClientPrefs.data.antialiasing;
 		bg.color = FlxColor.WHITE;
 		add(bg);
-		mobile.WideScreen.fit(bg);
+		mobile.screen.WideScreen.fit(bg);
 
 		grpSongs = new FlxTypedGroup<Alphabet>();
 		add(grpSongs);
@@ -598,7 +598,7 @@ class WeekEditorFreeplayState extends MusicBeatState implements PsychUIEventHand
 		changeSelection();
 		super.create();
 		#if mobile
-		add(new mobile.EditorPad(['ESCAPE UP DOWN']));
+		add(new mobile.controls.EditorPad(['ESCAPE UP DOWN']));
 		#end
 	}
 	

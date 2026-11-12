@@ -5,7 +5,7 @@ import flixel.graphics.FlxGraphic;
 import flixel.util.FlxDestroyUtil;
 
 #if mobile
-import mobile.MobileFileReference as FileReference;
+import mobile.native.MobileFileReference as FileReference;
 #else
 import openfl.net.FileReference;
 #end
@@ -171,7 +171,7 @@ class CharacterEditorState extends MusicBeatState implements PsychUIEventHandler
 
 		super.create();
 		#if mobile
-		var editorPad:mobile.EditorPad = new mobile.EditorPad(['ESCAPE SPACE R F Q E', 'W A S D I J K L', 'SHIFT CONTROL Z C V LEFT DOWN UP RIGHT']);
+		var editorPad:mobile.controls.EditorPad = new mobile.controls.EditorPad(['ESCAPE SPACE R F Q E', 'W A S D I J K L', 'SHIFT CONTROL Z C V LEFT DOWN UP RIGHT']);
 		editorPad.pinchZoom = true;
 		add(editorPad);
 		#end

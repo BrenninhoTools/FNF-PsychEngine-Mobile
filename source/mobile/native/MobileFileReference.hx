@@ -1,4 +1,4 @@
-package mobile;
+package mobile.native;
 
 import haxe.io.Bytes;
 import haxe.io.Path;
@@ -11,7 +11,7 @@ import lime.system.JNI;
 #end
 
 #if ios
-@:build(mobile.NativeBuild.addFiles('project/ios', 'mm', 'psych_ios'))
+@:build(mobile.native.NativeBuild.addFiles('project/ios', 'mm', 'psych_ios'))
 @:cppFileCode('
 extern "C" void psych_ios_dialog_reset(void);
 extern "C" int psych_ios_dialog_status(void);

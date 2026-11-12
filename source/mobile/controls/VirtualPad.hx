@@ -1,4 +1,4 @@
-package mobile;
+package mobile.controls;
 
 import flixel.graphics.FlxGraphic;
 import flixel.input.keyboard.FlxKey;

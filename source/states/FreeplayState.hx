@@ -107,7 +107,7 @@ class FreeplayState extends MusicBeatState
 		bg.antialiasing = ClientPrefs.data.antialiasing;
 		add(bg);
 		bg.screenCenter();
-		mobile.WideScreen.fit(bg);
+		mobile.screen.WideScreen.fit(bg);
 
 		grpSongs = new FlxTypedGroup<Alphabet>();
 		add(grpSongs);
@@ -201,15 +201,15 @@ class FreeplayState extends MusicBeatState
 	}
 
 	#if mobile
-	var backButton:mobile.MobileButton;
-	var previewButton:mobile.TouchButton;
-	var changersButton:mobile.TouchButton;
-	var resetButton:mobile.TouchButton;
+	var backButton:mobile.controls.MobileButton;
+	var previewButton:mobile.controls.TouchButton;
+	var changersButton:mobile.controls.TouchButton;
+	var resetButton:mobile.controls.TouchButton;
 	var dragAccum:Float = 0;
 
 	function createTouchButtons()
 	{
-		backButton = mobile.MobileButton.back();
+		backButton = mobile.controls.MobileButton.back();
 		backButton.alpha = 0.3;
 		add(backButton);
 
@@ -219,9 +219,9 @@ class FreeplayState extends MusicBeatState
 		previewButton = makeTouchButton(Language.getPhrase('freeplay_touch_preview', 'LISTEN'), 'listen', changersButton.x - 170, buttonY);
 	}
 
-	function makeTouchButton(label:String, image:String, x:Float, y:Float):mobile.TouchButton
+	function makeTouchButton(label:String, image:String, x:Float, y:Float):mobile.controls.TouchButton
 	{
-		var button:mobile.TouchButton = new mobile.TouchButton(x, y, label);
+		var button:mobile.controls.TouchButton = new mobile.controls.TouchButton(x, y, label);
 		button.useImage(Paths.image('mobile/freeplay/$image'));
 		add(button);
 		return button;
@@ -230,7 +230,7 @@ class FreeplayState extends MusicBeatState
 	function updateTouch()
 	{
 		touchAccept = touchPreview = touchChangers = touchReset = false;
-		mobile.TouchInput.blockGestures = !player.playingMusic;
+		mobile.input.TouchInput.blockGestures = !player.playingMusic;
 
 		changersButton.visible = resetButton.visible = !player.playingMusic;
 		if (previewButton.justTapped)
@@ -254,16 +254,16 @@ class FreeplayState extends MusicBeatState
 			return;
 		}
 
-		if (mobile.TouchInput.justSwiped('ui_left') || mobile.TouchInput.justSwiped('ui_right'))
+		if (mobile.input.TouchInput.justSwiped('ui_left') || mobile.input.TouchInput.justSwiped('ui_right'))
 		{
-			changeDiff(mobile.TouchInput.justSwiped('ui_left') ? -1 : 1);
+			changeDiff(mobile.input.TouchInput.justSwiped('ui_left') ? -1 : 1);
 			_updateSongLastDifficulty();
 		}
 
-		if (songs.length > 1 && mobile.TouchInput.isDragging())
+		if (songs.length > 1 && mobile.input.TouchInput.isDragging())
 		{
 			var step:Float = 100;
-			dragAccum += mobile.TouchInput.dragDeltaY();
+			dragAccum += mobile.input.TouchInput.dragDeltaY();
 			while (dragAccum >= step)
 			{
 				dragAccum -= step;
@@ -277,10 +277,10 @@ class FreeplayState extends MusicBeatState
 		}
 		else dragAccum = 0;
 
-		if (!mobile.TouchInput.justTapped()) return;
+		if (!mobile.input.TouchInput.justTapped()) return;
 
-		var tapX:Float = mobile.TouchInput.tapX;
-		var tapY:Float = mobile.TouchInput.tapY;
+		var tapX:Float = mobile.input.TouchInput.tapX;
+		var tapY:Float = mobile.input.TouchInput.tapY;
 		if (tapX >= scoreText.x - 6 && tapY <= scoreBG.y + scoreBG.height)
 		{
 			changeDiff(tapX < diffText.x + diffText.width / 2 ? -1 : 1);
@@ -290,7 +290,7 @@ class FreeplayState extends MusicBeatState
 
 		for (i in _lastVisibles)
 		{
-			if (mobile.TouchInput.overlapsScreen(grpSongs.members[i], tapX, tapY, null, 10) || mobile.TouchInput.overlapsScreen(iconArray[i], tapX, tapY))
+			if (mobile.input.TouchInput.overlapsScreen(grpSongs.members[i], tapX, tapY, null, 10) || mobile.input.TouchInput.overlapsScreen(iconArray[i], tapX, tapY))
 			{
 				if (i == curSelected) touchAccept = true;
 				else changeSelection(i - curSelected);
@@ -301,7 +301,7 @@ class FreeplayState extends MusicBeatState
 
 	override function openSubState(subState:flixel.FlxSubState)
 	{
-		mobile.TouchInput.blockGestures = false;
+		mobile.input.TouchInput.blockGestures = false;
 		super.openSubState(subState);
 	}
 	#end
@@ -724,7 +724,7 @@ class FreeplayState extends MusicBeatState
 	override function destroy():Void
 	{
 		#if mobile
-		mobile.TouchInput.blockGestures = false;
+		mobile.input.TouchInput.blockGestures = false;
 		#end
 		super.destroy();
 

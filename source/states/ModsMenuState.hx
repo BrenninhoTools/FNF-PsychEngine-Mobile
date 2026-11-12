@@ -72,7 +72,7 @@ class ModsMenuState extends MusicBeatState
 		bg.antialiasing = ClientPrefs.data.antialiasing;
 		add(bg);
 		bg.screenCenter();
-		mobile.WideScreen.fit(bg);
+		mobile.screen.WideScreen.fit(bg);
 
 		bgList = FlxSpriteUtil.drawRoundRect(new FlxSprite(40, 40).makeGraphic(340, 440, FlxColor.TRANSPARENT), 0, 0, 340, 440, 15, 15, FlxColor.BLACK);
 		bgList.alpha = 0.6;
@@ -296,7 +296,7 @@ class ModsMenuState extends MusicBeatState
 
 		changeSelectedMod();
 		#if mobile
-		add(mobile.MobileButton.back(null, true));
+		add(mobile.controls.MobileButton.back(null, true));
 		#end
 		super.create();
 	}
@@ -315,7 +315,7 @@ class ModsMenuState extends MusicBeatState
 
 	override function destroy()
 	{
-		mobile.TouchInput.blockGestures = false;
+		mobile.input.TouchInput.blockGestures = false;
 		super.destroy();
 	}
 	#end
@@ -323,7 +323,7 @@ class ModsMenuState extends MusicBeatState
 	override function update(elapsed:Float)
 	{
 		#if mobile
-		mobile.TouchInput.blockGestures = true;
+		mobile.input.TouchInput.blockGestures = true;
 		if (FlxG.mouse.justPressed) touchHoldTime = 0;
 		else if (FlxG.mouse.pressed) touchHoldTime += elapsed;
 		#end
@@ -368,9 +368,9 @@ class ModsMenuState extends MusicBeatState
 		if(controls.UI_DOWN_R || controls.UI_UP_R) holdTime = 0;
 
 		#if mobile
-		if (hoveringOnMods && !holdingMod && modsList.all.length > 1 && mobile.TouchInput.isDragging())
+		if (hoveringOnMods && !holdingMod && modsList.all.length > 1 && mobile.input.TouchInput.isDragging())
 		{
-			dragAccum += mobile.TouchInput.dragDeltaY();
+			dragAccum += mobile.input.TouchInput.dragDeltaY();
 			while (dragAccum >= 80)
 			{
 				dragAccum -= 80;
@@ -447,7 +447,7 @@ class ModsMenuState extends MusicBeatState
 						var curMod:ModItem = modsGroup.members[curSelectedMod];
 						if(curMod != null)
 						{
-							if(!holdingMod && FlxG.mouse.justMoved && FlxG.mouse.overlaps(curMod) #if mobile && touchHoldTime > 0.4 && !mobile.TouchInput.isDragging() #end) holdingMod = true;
+							if(!holdingMod && FlxG.mouse.justMoved && FlxG.mouse.overlaps(curMod) #if mobile && touchHoldTime > 0.4 && !mobile.input.TouchInput.isDragging() #end) holdingMod = true;
 
 							if(holdingMod)
 							{

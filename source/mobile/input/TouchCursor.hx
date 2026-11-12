@@ -1,4 +1,4 @@
-package mobile;
+package mobile.input;
 
 import openfl.Lib;
 import openfl.display.Sprite;

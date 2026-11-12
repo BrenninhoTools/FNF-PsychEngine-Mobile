@@ -130,7 +130,7 @@ class StoryMenuState extends MusicBeatState
 		var charArray:Array<String> = loadedWeeks[0].weekCharacters;
 		for (char in 0...3)
 		{
-			var weekCharacterThing:MenuCharacter = new MenuCharacter((FlxG.initialWidth * 0.25) * (1 + char) - 150 + mobile.WideScreen.offset, charArray[char]);
+			var weekCharacterThing:MenuCharacter = new MenuCharacter((FlxG.initialWidth * 0.25) * (1 + char) - 150 + mobile.screen.WideScreen.offset, charArray[char]);
 			weekCharacterThing.y += 70;
 			grpWeekCharacters.add(weekCharacterThing);
 		}
@@ -138,7 +138,7 @@ class StoryMenuState extends MusicBeatState
 		difficultySelectors = new FlxGroup();
 		add(difficultySelectors);
 
-		leftArrow = new FlxSprite(850 + mobile.WideScreen.offset, grpWeekText.members[0].y + 10);
+		leftArrow = new FlxSprite(850 + mobile.screen.WideScreen.offset, grpWeekText.members[0].y + 10);
 		leftArrow.antialiasing = ClientPrefs.data.antialiasing;
 		leftArrow.frames = ui_tex;
 		leftArrow.animation.addByPrefix('idle', "arrow left");
@@ -186,7 +186,7 @@ class StoryMenuState extends MusicBeatState
 		changeDifficulty();
 
 		#if mobile
-		add(mobile.MobileButton.back());
+		add(mobile.controls.MobileButton.back());
 		#end
 		super.create();
 	}
@@ -227,18 +227,18 @@ class StoryMenuState extends MusicBeatState
 			var changeDiff = false;
 			var touchAccept:Bool = false;
 			#if mobile
-			if (mobile.TouchInput.justTapped())
+			if (mobile.input.TouchInput.justTapped())
 			{
-				mobile.TouchInput.consumeTap();
-				if (mobile.TouchInput.tappedOn(leftArrow, null, 20))
+				mobile.input.TouchInput.consumeTap();
+				if (mobile.input.TouchInput.tappedOn(leftArrow, null, 20))
 					changeDifficulty(-1);
-				else if (mobile.TouchInput.tappedOn(rightArrow, null, 20))
+				else if (mobile.input.TouchInput.tappedOn(rightArrow, null, 20))
 					changeDifficulty(1);
 				else
 				{
 					for (num => item in grpWeekText.members)
 					{
-						if (mobile.TouchInput.tappedOn(item, null, 10))
+						if (mobile.input.TouchInput.tappedOn(item, null, 10))
 						{
 							if (num == curWeek) touchAccept = true;
 							else

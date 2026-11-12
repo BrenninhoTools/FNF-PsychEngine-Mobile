@@ -244,7 +244,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		bg.antialiasing = ClientPrefs.data.antialiasing;
 		bg.scrollFactor.set();
 		add(bg);
-		mobile.WideScreen.fit(bg);
+		mobile.screen.WideScreen.fit(bg);
 
 		if(chartEditorSave.data.autoSave != null) autoSaveCap = chartEditorSave.data.autoSave;
 		if(chartEditorSave.data.backupLimit != null) backupLimit = chartEditorSave.data.backupLimit;
@@ -532,7 +532,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		add(fullTipText);
 		super.create();
 		#if mobile
-		add(new mobile.EditorPad(['ESCAPE ENTER SPACE BACKSPACE DELETE HOME END', 'Q W E R Y LBRACKET RBRACKET J', 'A S D F Z X C V', 'SHIFT CONTROL ALT LEFT RIGHT']));
+		add(new mobile.controls.EditorPad(['ESCAPE ENTER SPACE BACKSPACE DELETE HOME END', 'Q W E R Y LBRACKET RBRACKET J', 'A S D F Z X C V', 'SHIFT CONTROL ALT LEFT RIGHT']));
 		#end
 	}
 
@@ -3897,7 +3897,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 			upperBox.bg.visible = false;
 
 			#if mobile
-			mobile.VSliceImport.pick(importVSliceChart, function(message:String) showOutput('Error: ' + message, true));
+			mobile.native.VSliceImport.pick(importVSliceChart, function(message:String) showOutput('Error: ' + message, true));
 			#else
 			fileDialog.open('chart.json', 'Open a V-Slice Chart file', function()
 			{

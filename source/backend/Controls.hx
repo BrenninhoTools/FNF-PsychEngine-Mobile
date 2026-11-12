@@ -91,9 +91,9 @@ class Controls
 		if(result) controllerMode = false;
 
 		#if mobile
-		if(!result && mobile.TouchInput.justPressed(key))
+		if(!result && mobile.input.TouchInput.justPressed(key))
 		{
-			if(mobile.TouchInput.isNoteKey(key)) controllerMode = true;
+			if(mobile.input.TouchInput.isNoteKey(key)) controllerMode = true;
 			return true;
 		}
 		#end
@@ -107,9 +107,9 @@ class Controls
 		if(result) controllerMode = false;
 
 		#if mobile
-		if(!result && mobile.TouchInput.pressed(key))
+		if(!result && mobile.input.TouchInput.pressed(key))
 		{
-			if(mobile.TouchInput.isNoteKey(key)) controllerMode = true;
+			if(mobile.input.TouchInput.isNoteKey(key)) controllerMode = true;
 			return true;
 		}
 		#end
@@ -123,9 +123,9 @@ class Controls
 		if(result) controllerMode = false;
 
 		#if mobile
-		if(!result && mobile.TouchInput.justReleased(key))
+		if(!result && mobile.input.TouchInput.justReleased(key))
 		{
-			if(mobile.TouchInput.isNoteKey(key)) controllerMode = true;
+			if(mobile.input.TouchInput.isNoteKey(key)) controllerMode = true;
 			return true;
 		}
 		#end

@@ -38,7 +38,7 @@ class MasterEditorMenu extends MusicBeatState
 		bg.scrollFactor.set();
 		bg.color = 0xFF353535;
 		add(bg);
-		mobile.WideScreen.fit(bg);
+		mobile.screen.WideScreen.fit(bg);
 
 		grpTexts = new FlxTypedGroup<Alphabet>();
 		add(grpTexts);
@@ -75,7 +75,7 @@ class MasterEditorMenu extends MusicBeatState
 
 		FlxG.mouse.visible = false;
 		#if mobile
-		add(mobile.MobileButton.back());
+		add(mobile.controls.MobileButton.back());
 		#end
 		super.create();
 	}
@@ -108,8 +108,8 @@ class MasterEditorMenu extends MusicBeatState
 
 		var touchAccept:Bool = false;
 		#if mobile
-		var tapped:Int = mobile.TouchInput.tappedRow(cast grpTexts.members);
-		mobile.TouchInput.consumeTap();
+		var tapped:Int = mobile.input.TouchInput.tappedRow(cast grpTexts.members);
+		mobile.input.TouchInput.consumeTap();
 		if (tapped > -1)
 		{
 			if (tapped == curSelected) touchAccept = true;

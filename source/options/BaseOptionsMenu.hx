@@ -43,7 +43,7 @@ class BaseOptionsMenu extends MusicBeatSubstate
 		bg.screenCenter();
 		bg.antialiasing = ClientPrefs.data.antialiasing;
 		add(bg);
-		mobile.WideScreen.fit(bg);
+		mobile.screen.WideScreen.fit(bg);
 
 		// avoids lagspikes while scrolling through menus!
 		grpOptions = new FlxTypedGroup<Alphabet>();
@@ -106,7 +106,7 @@ class BaseOptionsMenu extends MusicBeatSubstate
 		reloadCheckboxes();
 
 		#if mobile
-		add(mobile.MobileButton.back());
+		add(mobile.controls.MobileButton.back());
 		#end
 	}
 
@@ -137,8 +137,8 @@ class BaseOptionsMenu extends MusicBeatSubstate
 
 		var touchAccept:Bool = false;
 		#if mobile
-		var tapped:Int = mobile.TouchInput.tappedRow(cast grpOptions.members);
-		mobile.TouchInput.consumeTap();
+		var tapped:Int = mobile.input.TouchInput.tappedRow(cast grpOptions.members);
+		mobile.input.TouchInput.consumeTap();
 		if (tapped > -1)
 		{
 			if (tapped == curSelected) touchAccept = true;

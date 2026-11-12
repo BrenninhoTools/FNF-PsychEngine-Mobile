@@ -29,7 +29,7 @@ class CreditsState extends MusicBeatState
 		bg.antialiasing = ClientPrefs.data.antialiasing;
 		add(bg);
 		bg.screenCenter();
-		mobile.WideScreen.fit(bg);
+		mobile.screen.WideScreen.fit(bg);
 		
 		grpOptions = new FlxTypedGroup<Alphabet>();
 		add(grpOptions);
@@ -129,7 +129,7 @@ class CreditsState extends MusicBeatState
 		intendedColor = bg.color;
 		changeSelection();
 		#if mobile
-		add(mobile.MobileButton.back());
+		add(mobile.controls.MobileButton.back());
 		#end
 		super.create();
 	}
@@ -141,7 +141,7 @@ class CreditsState extends MusicBeatState
 
 	override function destroy()
 	{
-		mobile.TouchInput.blockGestures = false;
+		mobile.input.TouchInput.blockGestures = false;
 		super.destroy();
 	}
 	#end
@@ -149,7 +149,7 @@ class CreditsState extends MusicBeatState
 	override function update(elapsed:Float)
 	{
 		#if mobile
-		mobile.TouchInput.blockGestures = true;
+		mobile.input.TouchInput.blockGestures = true;
 		#end
 		if (FlxG.sound.music.volume < 0.7)
 		{
@@ -164,9 +164,9 @@ class CreditsState extends MusicBeatState
 				if(FlxG.keys.pressed.SHIFT) shiftMult = 3;
 
 				#if mobile
-				if (mobile.TouchInput.isDragging())
+				if (mobile.input.TouchInput.isDragging())
 				{
-					dragAccum += mobile.TouchInput.dragDeltaY();
+					dragAccum += mobile.input.TouchInput.dragDeltaY();
 					while (dragAccum >= 90)
 					{
 						dragAccum -= 90;
@@ -210,8 +210,8 @@ class CreditsState extends MusicBeatState
 
 			var touchAccept:Bool = false;
 			#if mobile
-			var tapped:Int = mobile.TouchInput.tappedRow(cast grpOptions.members);
-			mobile.TouchInput.consumeTap();
+			var tapped:Int = mobile.input.TouchInput.tappedRow(cast grpOptions.members);
+			mobile.input.TouchInput.consumeTap();
 			if (tapped > -1 && !unselectableCheck(tapped))
 			{
 				if (tapped == curSelected) touchAccept = true;

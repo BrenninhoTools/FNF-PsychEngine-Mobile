@@ -61,7 +61,7 @@ class FunkinLua {
 		lua = LuaL.newstate();
 		LuaL.openlibs(lua);
 		#if mobile
-		mobile.LuaSource.init();
+		mobile.native.LuaSource.init();
 		#end
 
 		//trace('Lua version: ' + Lua.version());

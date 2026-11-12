@@ -18,7 +18,7 @@ class LanguageSubState extends MusicBeatSubstate
 		bg.antialiasing = ClientPrefs.data.antialiasing;
 		bg.screenCenter();
 		add(bg);
-		mobile.WideScreen.fit(bg);
+		mobile.screen.WideScreen.fit(bg);
 		add(grpLanguages);
 
 		languages.push(ClientPrefs.defaultData.language); //English (US)
@@ -95,7 +95,7 @@ class LanguageSubState extends MusicBeatSubstate
 		changeSelected();
 
 		#if mobile
-		add(mobile.MobileButton.back());
+		add(mobile.controls.MobileButton.back());
 		#end
 	}
 

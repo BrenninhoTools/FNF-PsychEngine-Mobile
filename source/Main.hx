@@ -74,8 +74,8 @@ class Main extends Sprite
 
 		// Credits to MAJigsaw77 (he's the og author for this code)
 		#if mobile
-		mobile.StorageUtil.applyGameDir();
-		mobile.NativeCrash.install();
+		mobile.storage.StorageUtil.applyGameDir();
+		mobile.native.NativeCrash.install();
 		#end
 		#if VIDEOS_ALLOWED
 		hxvlc.util.Handle.init(#if (hxvlc >= "1.8.0")  ['--no-lua'] #end);
@@ -152,14 +152,14 @@ class Main extends Sprite
 		#if ACHIEVEMENTS_ALLOWED Achievements.load(); #end
 		var initialState:Class<FlxState> = cast game.initialState;
 		#if mobile
-		if (mobile.CopyState.needsCopy())
-			initialState = mobile.CopyState;
+		if (mobile.storage.CopyState.needsCopy())
+			initialState = mobile.storage.CopyState;
 		#end
 		addChild(new FlxGame(game.width, game.height, initialState, game.framerate, game.framerate, game.skipSplash, game.startFullscreen));
 		#if mobile
-		mobile.TouchInput.init();
-		mobile.TouchCursor.init();
-		mobile.NativeCrash.reportPrevious();
+		mobile.input.TouchInput.init();
+		mobile.input.TouchCursor.init();
+		mobile.native.NativeCrash.reportPrevious();
 		#end
 
 		fpsVar = new FPSCounter(10, 3, 0xFFFFFF);

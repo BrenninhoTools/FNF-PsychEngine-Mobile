@@ -1,4 +1,4 @@
-package mobile;
+package mobile.controls;
 
 class MobileButton extends FlxSprite
 {

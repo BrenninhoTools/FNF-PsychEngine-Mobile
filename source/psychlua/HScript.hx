@@ -157,6 +157,13 @@ class HScript extends Iris
 		set('FlxSprite', flixel.FlxSprite);
 		set('FlxText', flixel.text.FlxText);
 		crowplexus.iris.Iris.addProxyImport('flixel.FlxCamera', backend.PsychCamera);
+		#if mobile
+		crowplexus.iris.Iris.addProxyImport('mobile.TouchInput', mobile.input.TouchInput);
+		crowplexus.iris.Iris.addProxyImport('mobile.VirtualPad', mobile.controls.VirtualPad);
+		crowplexus.iris.Iris.addProxyImport('mobile.MobileButton', mobile.controls.MobileButton);
+		crowplexus.iris.Iris.addProxyImport('mobile.Hitbox', mobile.controls.Hitbox);
+		crowplexus.iris.Iris.addProxyImport('mobile.StorageUtil', mobile.storage.StorageUtil);
+		#end
 		set('FlxCamera', backend.PsychCamera);
 		set('PsychCamera', backend.PsychCamera);
 		set('FlxTimer', flixel.util.FlxTimer);
@@ -185,8 +192,8 @@ class HScript extends Iris
 		set('isMobile', mobile.MobileAPI.isMobile);
 		set('vibrate', mobile.MobileAPI.vibrate);
 		#if mobile
-		set('TouchInput', mobile.TouchInput);
-		set('VirtualPad', mobile.VirtualPad);
+		set('TouchInput', mobile.input.TouchInput);
+		set('VirtualPad', mobile.controls.VirtualPad);
 		#end
 		#if flxanimate
 		set('FlxAnimate', FlxAnimate);

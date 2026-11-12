@@ -1,4 +1,4 @@
-package mobile;
+package mobile.storage;
 
 import flixel.FlxState;
 import haxe.io.Bytes;

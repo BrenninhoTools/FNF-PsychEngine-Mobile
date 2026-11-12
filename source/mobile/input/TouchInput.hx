@@ -1,4 +1,4 @@
-package mobile;
+package mobile.input;
 
 import flixel.FlxBasic;
 import flixel.FlxObject;

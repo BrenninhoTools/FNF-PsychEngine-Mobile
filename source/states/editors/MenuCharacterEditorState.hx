@@ -1,7 +1,7 @@
 package states.editors;
 
 #if mobile
-import mobile.MobileFileReference as FileReference;
+import mobile.native.MobileFileReference as FileReference;
 #else
 import openfl.net.FileReference;
 #end
@@ -70,7 +70,7 @@ class MenuCharacterEditorState extends MusicBeatState implements PsychUIEventHan
 
 		super.create();
 		#if mobile
-		add(new mobile.EditorPad(['ESCAPE SPACE SHIFT LEFT DOWN UP RIGHT']));
+		add(new mobile.controls.EditorPad(['ESCAPE SPACE SHIFT LEFT DOWN UP RIGHT']));
 		#end
 	}
 

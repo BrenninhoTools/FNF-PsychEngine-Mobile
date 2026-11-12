@@ -1,4 +1,4 @@
-package mobile;
+package mobile.storage;
 
 #if android
 import lime.system.JNI;

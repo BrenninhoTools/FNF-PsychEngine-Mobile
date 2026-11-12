@@ -2,8 +2,8 @@ package options;
 
 import flixel.input.keyboard.FlxKey;
 import flixel.util.FlxSpriteUtil;
-import mobile.Hitbox;
-import mobile.VirtualPad;
+import mobile.controls.Hitbox;
+import mobile.controls.VirtualPad;
 
 typedef ControlSetting = {
 	name:String,
@@ -71,14 +71,14 @@ class MobileControlsState extends MusicBeatState
 		bg.antialiasing = ClientPrefs.data.antialiasing;
 		bg.screenCenter();
 		add(bg);
-		mobile.WideScreen.fit(bg);
+		mobile.screen.WideScreen.fit(bg);
 
 		hitbox = new Hitbox(true);
 		add(hitbox);
 
 		buildSettings();
 
-		var offset:Float = mobile.WideScreen.offset;
+		var offset:Float = mobile.screen.WideScreen.offset;
 		listX = 36 + offset;
 		listY = 86;
 
@@ -151,7 +151,7 @@ class MobileControlsState extends MusicBeatState
 		pad.onKey = onPadKey;
 		add(pad);
 
-		mobile.TouchInput.blockGestures = true;
+		mobile.input.TouchInput.blockGestures = true;
 		updateThumbnail();
 		updateRows();
 		super.create();
@@ -373,7 +373,7 @@ class MobileControlsState extends MusicBeatState
 		if (importing) return;
 		importing = true;
 		showStatus('Choose an image...', 30);
-		mobile.NativeImport.pickHitboxImage(Hitbox.imagePath(), function(_)
+		mobile.native.NativeImport.pickHitboxImage(Hitbox.imagePath(), function(_)
 		{
 			importing = false;
 			Hitbox.reloadImage();
@@ -515,8 +515,8 @@ class MobileControlsState extends MusicBeatState
 			}
 		}
 
-		var tapped:Int = mobile.TouchInput.tappedRow(cast rowBars, 0);
-		var tapX:Float = mobile.TouchInput.tapX;
+		var tapped:Int = mobile.input.TouchInput.tappedRow(cast rowBars, 0);
+		var tapX:Float = mobile.input.TouchInput.tapX;
 		if (tapped > -1 && tapX >= listX && tapX <= listX + LIST_WIDTH)
 		{
 			var index:Int = scroll + tapped;
@@ -534,10 +534,10 @@ class MobileControlsState extends MusicBeatState
 					updateRows();
 				}
 			}
-			mobile.TouchInput.consumeTap();
+			mobile.input.TouchInput.consumeTap();
 		}
-		else if (mobile.TouchInput.tappedOn(scrollUp)) changeSelection(-1);
-		else if (mobile.TouchInput.tappedOn(scrollDown)) changeSelection(1);
+		else if (mobile.input.TouchInput.tappedOn(scrollUp)) changeSelection(-1);
+		else if (mobile.input.TouchInput.tappedOn(scrollDown)) changeSelection(1);
 
 		if (controls.UI_UP_P) changeSelection(-1);
 		if (controls.UI_DOWN_P) changeSelection(1);
@@ -549,7 +549,7 @@ class MobileControlsState extends MusicBeatState
 
 	override function destroy()
 	{
-		mobile.TouchInput.blockGestures = false;
+		mobile.input.TouchInput.blockGestures = false;
 		super.destroy();
 	}
 }

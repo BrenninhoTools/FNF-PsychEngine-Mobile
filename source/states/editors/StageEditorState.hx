@@ -16,7 +16,7 @@ import openfl.utils.Assets;
 import openfl.display.Sprite;
 
 #if mobile
-import mobile.MobileFileReference as FileReference;
+import mobile.native.MobileFileReference as FileReference;
 #else
 import openfl.net.FileReference;
 #end
@@ -117,7 +117,7 @@ class StageEditorState extends MusicBeatState implements PsychUIEventHandler.Psy
 
 		super.create();
 		#if mobile
-		var editorPad:mobile.EditorPad = new mobile.EditorPad(['ESCAPE SPACE R F Q E W S', 'I J K L LEFT DOWN UP RIGHT', 'SHIFT CONTROL']);
+		var editorPad:mobile.controls.EditorPad = new mobile.controls.EditorPad(['ESCAPE SPACE R F Q E W S', 'I J K L LEFT DOWN UP RIGHT', 'SHIFT CONTROL']);
 		editorPad.pinchZoom = true;
 		add(editorPad);
 		#end
@@ -1671,7 +1671,7 @@ class StageEditorState extends MusicBeatState implements PsychUIEventHandler.Psy
 		#if mobile
 		if (pickingImage) return;
 		pickingImage = true;
-		mobile.StageImageImport.pick(function(path:String)
+		mobile.native.StageImageImport.pick(function(path:String)
 		{
 			pickingImage = false;
 			handleLoadedImage(path);

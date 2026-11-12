@@ -1,4 +1,4 @@
-package mobile;
+package mobile.storage;
 
 import haxe.io.Path;
 #if android

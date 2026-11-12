@@ -81,16 +81,16 @@ class MobileSettingsSubState extends BaseOptionsMenu
 			STRING,
 			['Original', 'Full']);
 		addOption(option);
-		option.onChange = mobile.ScreenStyle.apply;
+		option.onChange = mobile.screen.ScreenStyle.apply;
 
 		#if android
-		ClientPrefs.data.storageType = mobile.StorageUtil.getStorageType();
+		ClientPrefs.data.storageType = mobile.storage.StorageUtil.getStorageType();
 		initialStorage = ClientPrefs.data.storageType;
 		var option:Option = new Option('Storage Type:',
 			'Data: Android/data. Media: Android/media. Obb: Android/obb (all deleted on uninstall).\nExternal: /storage/emulated/0/.PsychEngine, kept after uninstalling.' + storageSpace(),
 			'storageType',
 			STRING,
-			mobile.StorageUtil.TYPES);
+			mobile.storage.StorageUtil.TYPES);
 		addOption(option);
 		option.onChange = onChangeStorage;
 		#end
@@ -101,38 +101,38 @@ class MobileSettingsSubState extends BaseOptionsMenu
 	#if android
 	static function storageSpace():String
 	{
-		var space:String = mobile.StorageUtil.describeSpace();
+		var space:String = mobile.storage.StorageUtil.describeSpace();
 		return space.length > 0 ? ' ($space)' : '';
 	}
 
 	function onChangeStorage()
 	{
-		if (ClientPrefs.data.storageType == 'External' && !mobile.StorageUtil.hasAccess())
-			mobile.StorageUtil.requestAccess();
+		if (ClientPrefs.data.storageType == 'External' && !mobile.storage.StorageUtil.hasAccess())
+			mobile.storage.StorageUtil.requestAccess();
 	}
 
 	function closeStorage():Bool
 	{
 		if (ClientPrefs.data.storageType == initialStorage) return false;
 
-		var oldDir:String = mobile.StorageUtil.getGameDir();
-		mobile.StorageUtil.setStorageType(ClientPrefs.data.storageType);
+		var oldDir:String = mobile.storage.StorageUtil.getGameDir();
+		mobile.storage.StorageUtil.setStorageType(ClientPrefs.data.storageType);
 		ClientPrefs.saveSettings();
-		var newDir:String = mobile.StorageUtil.getGameDir();
+		var newDir:String = mobile.storage.StorageUtil.getGameDir();
 		if (newDir == oldDir) return false;
 
-		mobile.StorageUtil.ensureFolders(newDir);
-		mobile.StorageUtil.migrate(oldDir, newDir);
-		mobile.StorageUtil.applyGameDir();
+		mobile.storage.StorageUtil.ensureFolders(newDir);
+		mobile.storage.StorageUtil.migrate(oldDir, newDir);
+		mobile.storage.StorageUtil.applyGameDir();
 		#if LUA_ALLOWED
 		Mods.pushGlobalMods();
 		#end
 		Mods.loadTopMod();
-		if (mobile.CopyState.needsCopy())
+		if (mobile.storage.CopyState.needsCopy())
 		{
 			FlxTransitionableState.skipNextTransIn = true;
 			FlxTransitionableState.skipNextTransOut = true;
-			FlxG.switchState(new mobile.CopyState());
+			FlxG.switchState(new mobile.storage.CopyState());
 			return true;
 		}
 		return false;

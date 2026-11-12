@@ -231,7 +231,7 @@ class ClientPrefs {
 			FlxG.sound.muted = FlxG.save.data.mute;
 
 		#if DISCORD_ALLOWED DiscordClient.check(); #end
-		#if mobile mobile.ScreenStyle.apply(); #end
+		#if mobile mobile.screen.ScreenStyle.apply(); #end
 
 		// controls on a separate save file
 		var save:FlxSave = new FlxSave();

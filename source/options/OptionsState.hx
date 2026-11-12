@@ -45,7 +45,7 @@ class OptionsState extends MusicBeatState
 			case 'Mobile Options':
 				openSubState(new options.MobileSettingsSubState());
 			case 'Open Data Folder':
-				mobile.DataFolder.open();
+				mobile.storage.DataFolder.open();
 			#end
 		}
 	}
@@ -66,7 +66,7 @@ class OptionsState extends MusicBeatState
 
 		bg.screenCenter();
 		add(bg);
-		mobile.WideScreen.fit(bg);
+		mobile.screen.WideScreen.fit(bg);
 
 		#if android
 		if (!showDataFolder()) options.remove('Open Data Folder');
@@ -92,7 +92,7 @@ class OptionsState extends MusicBeatState
 		ClientPrefs.saveSettings();
 
 		#if mobile
-		add(mobile.MobileButton.back());
+		add(mobile.controls.MobileButton.back());
 		#end
 
 		super.create();
@@ -111,7 +111,7 @@ class OptionsState extends MusicBeatState
 
 	#if android
 	static function showDataFolder():Bool
-		return mobile.StorageUtil.isAppOwned();
+		return mobile.storage.StorageUtil.isAppOwned();
 	#end
 
 	override function closeSubState()
@@ -139,8 +139,8 @@ class OptionsState extends MusicBeatState
 		#if mobile
 		if (subState == null)
 		{
-			var tapped:Int = mobile.TouchInput.tappedRow(cast grpOptions.members);
-			mobile.TouchInput.consumeTap();
+			var tapped:Int = mobile.input.TouchInput.tappedRow(cast grpOptions.members);
+			mobile.input.TouchInput.consumeTap();
 			if (tapped > -1)
 			{
 				if (tapped == curSelected) touchAccept = true;

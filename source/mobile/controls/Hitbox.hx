@@ -1,4 +1,4 @@
-package mobile;
+package mobile.controls;
 
 import flixel.util.FlxGradient;
 import openfl.display.BitmapData;
