@@ -374,6 +374,7 @@ class CopyState extends FlxState
 					File.saveContent('crash/copy_failures.txt', failures.join('\n'));
 				}
 				File.saveContent(MARKER, StorageUtil.getInstallStamp());
+				StorageUtil.protectFolder();
 			}
 			catch (e:Dynamic) {}
 

@@ -643,6 +643,8 @@ class PlayState extends MusicBeatState
 			controls.controllerMode = true;
 			keyPressed(lane);
 		};
+		mobile.input.TouchInput.onLaneRelease = function(lane:Int) keyReleased(lane);
+
 		hitbox.cameras = [camOther];
 		if (arrowsMode) hitbox.visible = false;
 		add(hitbox);
@@ -2956,7 +2958,7 @@ class PlayState extends MusicBeatState
 		// TO DO: Find a better way to handle controller inputs, this should work for now
 		if((controls.controllerMode || strumsBlocked.contains(true)) && releaseArray.contains(true))
 			for (i in 0...releaseArray.length)
-				if(releaseArray[i] || strumsBlocked[i] == true)
+				if((releaseArray[i] || strumsBlocked[i] == true) #if mobile && !mobile.input.TouchInput.laneReleasedDirectly(i) #end)
 					keyReleased(i);
 	}
 
@@ -3249,6 +3251,8 @@ class PlayState extends MusicBeatState
 	override function destroy() {
 		#if mobile
 		mobile.input.TouchInput.onLanePress = null;
+		mobile.input.TouchInput.onLaneRelease = null;
+		mobile.input.TouchInput.releaseAllLanes();
 		if (savedDownScroll != null)
 		{
 			ClientPrefs.data.downScroll = savedDownScroll;

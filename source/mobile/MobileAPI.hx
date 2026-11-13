@@ -11,13 +11,6 @@ import extension.haptics.android.HapticAndroid;
 import extension.haptics.Haptic;
 #end
 
-#if ios
-@:cppFileCode('
-extern "C" void psych_ios_keep_screen_on(int value);
-extern "C" int psych_ios_battery_level(void);
-extern "C" int psych_ios_is_charging(void);
-')
-#end
 class MobileAPI
 {
 	static final LANE_KEYS:Array<String> = ['note_left', 'note_down', 'note_up', 'note_right'];
@@ -118,6 +111,8 @@ class MobileAPI
 	{
 		#if android
 		JNI.createStaticMethod(UTIL, 'toast', '(Ljava/lang/String;Z)V')(text == null ? '' : text, longDuration);
+		#elseif ios
+		ios.Toast.show(text == null ? '' : text, longDuration ? ios.Toast.LONG : ios.Toast.SHORT);
 		#end
 	}
 
@@ -126,7 +121,7 @@ class MobileAPI
 		#if android
 		JNI.createStaticMethod(UTIL, 'keepScreenOn', '(Z)V')(value);
 		#elseif ios
-		untyped __cpp__('psych_ios_keep_screen_on({0})', value ? 1 : 0);
+		ios.Screen.keepAwake = value;
 		#end
 	}
 
@@ -136,7 +131,8 @@ class MobileAPI
 		var level:Dynamic = JNI.createStaticMethod(UTIL, 'getBatteryLevel', '()I')();
 		return level == null ? -1 : level;
 		#elseif ios
-		return untyped __cpp__('psych_ios_battery_level()');
+		var level:Float = ios.Device.batteryLevel;
+		return level < 0 ? -1 : Math.round(level * 100);
 		#else
 		return -1;
 		#end
@@ -147,7 +143,8 @@ class MobileAPI
 		#if android
 		return JNI.createStaticMethod(UTIL, 'isCharging', '()Z')() == true;
 		#elseif ios
-		return untyped __cpp__('psych_ios_is_charging() != 0');
+		var state:ios.BatteryState = ios.Device.batteryState;
+		return state == ios.BatteryState.CHARGING || state == ios.BatteryState.FULL;
 		#else
 		return false;
 		#end

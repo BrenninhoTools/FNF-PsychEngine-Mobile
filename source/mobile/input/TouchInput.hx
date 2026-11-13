@@ -59,11 +59,59 @@ class TouchInput
 	static var directPending:Array<Bool> = [for (i in 0...LANES) false];
 	static var directHandled:Array<Bool> = [for (i in 0...LANES) false];
 
+	static var releasePending:Array<Bool> = [for (i in 0...LANES) false];
+	static var releaseHandled:Array<Bool> = [for (i in 0...LANES) false];
+	static var fingerLane:Map<Int, Int> = new Map();
+	static var laneFingers:Array<Int> = [for (i in 0...LANES) 0];
+
 	public static var onLanePress:Int->Void = null;
+	public static var onLaneRelease:Int->Void = null;
 
 	public static function laneHandledDirectly(lane:Int):Bool
 	{
 		return lane >= 0 && lane < LANES && directHandled[lane];
+	}
+
+	public static function laneReleasedDirectly(lane:Int):Bool
+	{
+		return lane >= 0 && lane < LANES && releaseHandled[lane];
+	}
+
+	static function directEnabled():Bool
+	{
+		return hitboxEnabled && onLanePress != null;
+	}
+
+	static function fingerEnter(id:Int, lane:Int)
+	{
+		if (lane < 0) return;
+		fingerLane.set(id, lane);
+		laneFingers[lane]++;
+		if (!directPending[lane])
+		{
+			directPending[lane] = true;
+			onLanePress(lane);
+		}
+	}
+
+	static function fingerLeave(id:Int)
+	{
+		if (!fingerLane.exists(id)) return;
+		var lane:Int = fingerLane.get(id);
+		fingerLane.remove(id);
+		if (laneFingers[lane] > 0) laneFingers[lane]--;
+		if (laneFingers[lane] == 0 && onLaneRelease != null)
+		{
+			releasePending[lane] = true;
+			onLaneRelease(lane);
+		}
+	}
+
+	public static function releaseAllLanes()
+	{
+		for (id in [for (key in fingerLane.keys()) key]) fingerLeave(id);
+		fingerLane.clear();
+		for (i in 0...LANES) laneFingers[i] = 0;
 	}
 	static var dragHaptic:Float = 0;
 
@@ -466,21 +514,24 @@ class TouchInput
 		if (activeTouches == 0) primaryBlocked = onControl;
 		activeTouches++;
 		pending.push({type: BEGIN, id: e.touchPointID, x: x, y: y});
-		if (hitboxEnabled && !onControl && onLanePress != null)
-		{
-			var lane:Int = laneAt(x, y);
-			if (lane > -1 && !directPending[lane])
-			{
-				directPending[lane] = true;
-				onLanePress(lane);
-			}
-		}
+		if (!onControl && directEnabled()) fingerEnter(e.touchPointID, laneAt(x, y));
 	}
 
 	static function onTouchMove(e:TouchEvent)
 	{
 		if (FlxG.game == null || FlxG.scaleMode == null) return;
-		pending.push({type: MOVE, id: e.touchPointID, x: toGameX(e.stageX), y: toGameY(e.stageY)});
+		var x:Float = toGameX(e.stageX);
+		var y:Float = toGameY(e.stageY);
+		pending.push({type: MOVE, id: e.touchPointID, x: x, y: y});
+		if (directEnabled() && fingerLane.exists(e.touchPointID))
+		{
+			var lane:Int = laneAt(x, y);
+			if (lane != fingerLane.get(e.touchPointID))
+			{
+				fingerLeave(e.touchPointID);
+				fingerEnter(e.touchPointID, lane);
+			}
+		}
 	}
 
 	static function onTouchEnd(e:TouchEvent)
@@ -488,6 +539,7 @@ class TouchInput
 		if (activeTouches > 0) activeTouches--;
 		if (FlxG.game == null || FlxG.scaleMode == null) return;
 		pending.push({type: END, id: e.touchPointID, x: toGameX(e.stageX), y: toGameY(e.stageY)});
+		fingerLeave(e.touchPointID);
 	}
 
 	static function onMouseEvent(e:MouseEvent)
@@ -499,6 +551,7 @@ class TouchInput
 	{
 		pending.resize(0);
 		points.clear();
+		releaseAllLanes();
 		activeTouches = 0;
 		primaryBlocked = false;
 	}
@@ -515,6 +568,8 @@ class TouchInput
 			laneTapped[i] = false;
 			directHandled[i] = directPending[i];
 			directPending[i] = false;
+			releaseHandled[i] = releasePending[i];
+			releasePending[i] = false;
 		}
 		swipeUp = swipeDown = swipeLeft = swipeRight = tap = tapConsumed = backTap = pauseTap = dragging = false;
 		touchBegan = touchEnded = 0;

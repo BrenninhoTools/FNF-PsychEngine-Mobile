@@ -108,7 +108,15 @@ class MobileSettingsSubState extends BaseOptionsMenu
 	function onChangeStorage()
 	{
 		if (ClientPrefs.data.storageType == 'External' && !mobile.storage.StorageUtil.hasAccess())
-			mobile.storage.StorageUtil.requestAccess();
+		{
+			var option:Option = curOption;
+			mobile.storage.StorageUtil.requestAccess(function(granted:Bool) {
+				if (granted || ClientPrefs.data.storageType != 'External') return;
+				ClientPrefs.data.storageType = initialStorage == 'External' ? 'Data' : initialStorage;
+				if (option != null) updateTextFrom(option);
+				mobile.MobileAPI.toast('Storage access was denied, keeping ' + ClientPrefs.data.storageType + '.');
+			});
+		}
 	}
 
 	function closeStorage():Bool

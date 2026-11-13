@@ -3,13 +3,8 @@ package mobile.storage;
 import haxe.io.Path;
 #if android
 import lime.system.JNI;
-#end
-
-#if ios
-@:cppFileCode('
-extern "C" double psych_ios_free_space(void);
-extern "C" double psych_ios_total_space(void);
-')
+import androidmanager.content.Storage as AndroidStorage;
+import androidmanager.os.Build.VERSION as AndroidVersion;
 #end
 class StorageUtil
 {
@@ -53,7 +48,8 @@ class StorageUtil
 		cachedGameDir = Path.addTrailingSlash(path != null && path.length > 0 ? path : lime.system.System.applicationStorageDirectory);
 		return cachedGameDir;
 		#elseif ios
-		cachedGameDir = Path.addTrailingSlash(lime.system.System.documentsDirectory);
+		var documents:String = ios.Paths.documents;
+		cachedGameDir = Path.addTrailingSlash(documents != null && documents.length > 0 ? documents : lime.system.System.documentsDirectory);
 		return cachedGameDir;
 		#else
 		return Path.addTrailingSlash(Sys.getCwd());
@@ -126,20 +122,31 @@ class StorageUtil
 		#end
 	}
 
-	public static function requestAccess()
+	public static function requestAccess(?callback:Bool->Void)
 	{
 		#if android
+		try
+		{
+			AndroidStorage.requestAccess(AndroidVersion.SDK_INT >= 30, function(granted:Bool) {
+				clearCache();
+				if (callback != null) callback(granted || hasAccess());
+			});
+			return;
+		}
+		catch (e:Dynamic) {}
 		jni('requestAccess', '()V')();
+		#else
+		if (callback != null) callback(true);
 		#end
 	}
 
 	public static function getFreeSpace(?path:String):Float
 	{
 		#if android
-		var value:Dynamic = jni('getFreeSpaceFor', '(Ljava/lang/String;)D')(path == null ? getGameDir() : path);
-		return value == null ? -1 : value;
+		var space = AndroidStorage.getSpace(path == null ? getGameDir() : path);
+		return space == null ? -1 : space.available;
 		#elseif ios
-		return untyped __cpp__('psych_ios_free_space()');
+		return ios.Paths.freeSpace;
 		#else
 		return -1;
 		#end
@@ -148,10 +155,10 @@ class StorageUtil
 	public static function getTotalSpace(?path:String):Float
 	{
 		#if android
-		var value:Dynamic = jni('getTotalSpaceFor', '(Ljava/lang/String;)D')(path == null ? getGameDir() : path);
-		return value == null ? -1 : value;
+		var space = AndroidStorage.getSpace(path == null ? getGameDir() : path);
+		return space == null ? -1 : space.total;
 		#elseif ios
-		return untyped __cpp__('psych_ios_total_space()');
+		return ios.Paths.totalSpace;
 		#else
 		return -1;
 		#end
@@ -166,8 +173,7 @@ class StorageUtil
 	public static function getFolderSize(path:String):Float
 	{
 		#if android
-		var value:Dynamic = jni('getFolderSize', '(Ljava/lang/String;)D')(path);
-		return value == null ? 0 : value;
+		return FileSystem.exists(path) ? AndroidStorage.getSize(path) : 0;
 		#else
 		return folderSizeHaxe(path);
 		#end
@@ -194,7 +200,7 @@ class StorageUtil
 	{
 		if (path == null) path = getGameDir();
 		#if android
-		return jni('isWritable', '(Ljava/lang/String;)Z')(path) == true;
+		return AndroidStorage.isWritable(path);
 		#else
 		var probe:String = Path.addTrailingSlash(path) + '.psych_probe';
 		try
@@ -410,6 +416,21 @@ class StorageUtil
 		return size;
 	}
 
+	public static function protectFolder(?dir:String)
+	{
+		if (dir == null) dir = getGameDir();
+		try
+		{
+			#if android
+			var type:String = getStorageType();
+			if (type == MEDIA || type == EXTERNAL) AndroidStorage.createNoMedia(dir);
+			#elseif ios
+			for (folder in ['assets', 'mods', 'crash']) if (FileSystem.exists(dir + folder)) ios.Paths.excludeFromBackup(dir + folder, folder != 'mods');
+			#end
+		}
+		catch (e:Dynamic) {}
+	}
+
 	public static function applyGameDir()
 	{
 		clearCache();
@@ -422,6 +443,7 @@ class StorageUtil
 		}
 		#end
 		ensureFolders(dir);
+		protectFolder(dir);
 		Sys.setCwd(dir);
 		#if mobile
 		Paths.resetModsRoot();
