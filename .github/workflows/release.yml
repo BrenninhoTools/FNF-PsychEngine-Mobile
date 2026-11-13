@@ -19,6 +19,9 @@ concurrency:
 permissions:
   contents: write
 
+env:
+  HAXE_VERSION: 4.3.7
+
 jobs:
   buildAndroid:
     runs-on: ubuntu-latest
@@ -39,6 +42,11 @@ jobs:
       - name: Use Java 17
         run: echo "JAVA_HOME=$JAVA_HOME_17_X64" >> $GITHUB_ENV
 
+      - name: Install System Libraries
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq g++ libx11-dev libxi-dev libxext-dev libxinerama-dev libxrandr-dev libgl-dev libgl1-mesa-dev libasound2-dev libpulse-dev
+
       - uses: nttld/setup-ndk@v1
         id: setup-ndk
         with:
@@ -47,19 +55,19 @@ jobs:
 
       - uses: krdlab/setup-haxe@master
         with:
-          haxe-version: 4.3.7
+          haxe-version: ${{ env.HAXE_VERSION }}
 
-      - name: Restore Haxelib Cache
-        id: haxelib-cache
+      - name: Restore Haxelibs
+        id: hmm-cache
         uses: actions/cache@v4
         with:
-          path: ~/haxelib
-          key: haxelib-android-4.3.7-${{ hashFiles('setup/unix.sh') }}
+          path: .haxelib
+          key: hmm-android-${{ env.HAXE_VERSION }}-${{ hashFiles('hmm.json') }}
 
       - name: Restore hxcpp Cache
         uses: actions/cache@v4
         with:
-          path: ~/.hxcpp_cache
+          path: ${{ runner.temp }}/hxcpp_cache
           key: hxcpp-android-${{ github.sha }}
           restore-keys: hxcpp-android-
 
@@ -72,24 +80,18 @@ jobs:
           key: gradle-${{ hashFiles('Project.xml', 'project/android/**/*.gradle') }}
           restore-keys: gradle-
 
-      - name: Install Haxelib
+      - name: Install Haxelibs
         run: |
-          mkdir -p ~/.hxcpp_cache
-          echo "HXCPP_COMPILE_CACHE=$HOME/.hxcpp_cache" >> $GITHUB_ENV
+          mkdir -p "$RUNNER_TEMP/hxcpp_cache"
+          echo "HXCPP_COMPILE_CACHE=$RUNNER_TEMP/hxcpp_cache" >> $GITHUB_ENV
           echo "HXCPP_COMPILE_THREADS=$(nproc)" >> $GITHUB_ENV
           echo "GRADLE_OPTS=-Dorg.gradle.parallel=true -Dorg.gradle.caching=true -Dorg.gradle.vfs.watch=false -Dkotlin.incremental=false" >> $GITHUB_ENV
-          echo "::notice title=hxcpp cache (restored)::$(du -sh ~/.hxcpp_cache | cut -f1)"
-          haxelib setup ~/haxelib
-          if [ "${{ steps.haxelib-cache.outputs.cache-hit }}" != "true" ]; then
-            haxelib install hxcpp > /dev/null --quiet
-            chmod +x ./setup/unix.sh
-            sh ./setup/unix.sh
+          haxelib --global install hmm --quiet
+          if [ "${{ steps.hmm-cache.outputs.cache-hit }}" != "true" ]; then
+            haxelib --global run hmm install
+            (cd "$(haxelib libpath hxcpp)/tools/hxcpp" && haxe compile.hxml)
           fi
-
-      - name: Use Bundled Lua
-        run: |
-          LUA_PATH=$(haxelib libpath linc_luajit)
-          for LIB in "$LUA_PATH"/lib/lua/lib/Android/*.a; do printf '!<arch>\n' > "$LIB"; done
+          haxelib list
 
       - name: Configure Android
         run: |
@@ -97,6 +99,23 @@ jobs:
           haxelib run lime config ANDROID_NDK_ROOT ${{ steps.setup-ndk.outputs.ndk-path }}
           haxelib run lime config JAVA_HOME $JAVA_HOME
           haxelib run lime config ANDROID_SETUP true
+
+      - name: Rebuild Lime
+        run: |
+          LIME=$(haxelib libpath lime)
+          if [ ! -f "$LIME/ndll/.psych-linux" ]; then
+            haxelib run lime rebuild linux -64 -release
+            touch "$LIME/ndll/.psych-linux"
+          fi
+          if [ ! -f "$LIME/ndll/.psych-android" ]; then
+            haxelib run lime rebuild android -arm64 -release
+            touch "$LIME/ndll/.psych-android"
+          fi
+
+      - name: Use Bundled Lua
+        run: |
+          LUA_PATH=$(haxelib libpath linc_luajit)
+          for LIB in "$LUA_PATH"/lib/lua/lib/Android/*.a; do printf '!<arch>\n' > "$LIB"; done
 
       - name: Skip SScript setup mode
         run: echo 'oy9:showMacroty8:loopCosti25y10:includeAllfg' >> ~/settings.cocoa
@@ -125,7 +144,6 @@ jobs:
             echo "::error title=lime build android (tail)::$(tail -n 60 compile.log | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')"
             exit 1
           fi
-          echo "::notice title=hxcpp cache (after build)::$(du -sh ~/.hxcpp_cache | cut -f1)"
 
       - name: Verify APK
         run: |
@@ -164,33 +182,44 @@ jobs:
 
       - uses: krdlab/setup-haxe@master
         with:
-          haxe-version: 4.3.7
+          haxe-version: ${{ env.HAXE_VERSION }}
 
-      - name: Restore Haxelib Cache
-        id: haxelib-cache
+      - name: Restore Haxelibs
+        id: hmm-cache
         uses: actions/cache@v4
         with:
-          path: ~/haxelib
-          key: haxelib-ios-4.3.7-${{ hashFiles('setup/unix.sh') }}
+          path: .haxelib
+          key: hmm-ios-${{ env.HAXE_VERSION }}-${{ hashFiles('hmm.json') }}
 
       - name: Restore hxcpp Cache
         uses: actions/cache@v4
         with:
-          path: ~/.hxcpp_cache
+          path: ${{ runner.temp }}/hxcpp_cache
           key: hxcpp-ios-${{ github.sha }}
           restore-keys: hxcpp-ios-
 
-      - name: Install Haxelib
+      - name: Install Haxelibs
         run: |
-          mkdir -p ~/.hxcpp_cache
-          echo "HXCPP_COMPILE_CACHE=$HOME/.hxcpp_cache" >> $GITHUB_ENV
+          mkdir -p "$RUNNER_TEMP/hxcpp_cache"
+          echo "HXCPP_COMPILE_CACHE=$RUNNER_TEMP/hxcpp_cache" >> $GITHUB_ENV
           echo "HXCPP_COMPILE_THREADS=$(sysctl -n hw.ncpu)" >> $GITHUB_ENV
-          echo "::notice title=hxcpp cache (restored)::$(du -sh ~/.hxcpp_cache | cut -f1)"
-          arch -x86_64 haxelib setup ~/haxelib
-          if [ "${{ steps.haxelib-cache.outputs.cache-hit }}" != "true" ]; then
-            arch -x86_64 haxelib install hxcpp > /dev/null --quiet
-            chmod +x ./setup/unix.sh
-            arch -x86_64 /bin/sh ./setup/unix.sh
+          arch -x86_64 haxelib --global install hmm --quiet
+          if [ "${{ steps.hmm-cache.outputs.cache-hit }}" != "true" ]; then
+            arch -x86_64 haxelib --global run hmm install
+            (cd "$(arch -x86_64 haxelib libpath hxcpp)/tools/hxcpp" && arch -x86_64 haxe compile.hxml)
+          fi
+          arch -x86_64 haxelib list
+
+      - name: Rebuild Lime
+        run: |
+          LIME=$(arch -x86_64 haxelib libpath lime)
+          if [ ! -f "$LIME/ndll/.psych-mac" ]; then
+            arch -x86_64 haxelib run lime rebuild mac -64 -release
+            touch "$LIME/ndll/.psych-mac"
+          fi
+          if [ ! -f "$LIME/ndll/.psych-ios" ]; then
+            arch -x86_64 haxelib run lime rebuild ios -release
+            touch "$LIME/ndll/.psych-ios"
           fi
 
       - name: Use Bundled Lua
@@ -208,8 +237,6 @@ jobs:
           arch -x86_64 haxelib run lime update ios -D officialBuild 2>&1 | tee compile.log || true
           if ! ls export/release/ios/*.xcodeproj > /dev/null 2>&1; then
             echo "::error title=lime update ios::$(tail -n 60 compile.log | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')"
-            arch -x86_64 haxe -version 2>&1 | sed 's/^/::error title=haxe::/'
-            arch -x86_64 haxelib list 2>&1 | head -n 40 | awk '{printf "%s%%0A", $0}' | sed 's/^/::error title=haxelib list::/'
             exit 1
           fi
 
@@ -226,7 +253,6 @@ jobs:
             echo "::error title=xcodebuild (errors)::$(sed 's/%/%25/g' ../../../errors.log | awk '{printf "%s%%0A", $0}')"
             exit 1
           fi
-          echo "::notice title=hxcpp cache (after build)::$(du -sh ~/.hxcpp_cache | cut -f1)"
 
       - name: Package IPA
         run: |
@@ -244,8 +270,246 @@ jobs:
           if-no-files-found: error
           compression-level: 0
 
+  buildWindows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - uses: actions/checkout@v4.1.7
+        with:
+          filter: blob:none
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /*
+            !/art/*
+            /art/icons/
+            /art/readme.txt
+            !/docs/
+            !/documents-mobile/
+
+      - uses: krdlab/setup-haxe@master
+        with:
+          haxe-version: ${{ env.HAXE_VERSION }}
+
+      - name: Restore Haxelibs
+        id: hmm-cache
+        uses: actions/cache@v4
+        with:
+          path: .haxelib
+          key: hmm-windows-${{ env.HAXE_VERSION }}-${{ hashFiles('hmm.json') }}
+
+      - name: Restore hxcpp Cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/hxcpp_cache
+          key: hxcpp-windows-${{ github.sha }}
+          restore-keys: hxcpp-windows-
+
+      - name: Install Haxelibs
+        run: |
+          mkdir -p "$RUNNER_TEMP/hxcpp_cache"
+          echo "HXCPP_COMPILE_CACHE=$RUNNER_TEMP\\hxcpp_cache" >> $GITHUB_ENV
+          echo "HXCPP_COMPILE_THREADS=$NUMBER_OF_PROCESSORS" >> $GITHUB_ENV
+          haxelib --global install hmm --quiet
+          if [ "${{ steps.hmm-cache.outputs.cache-hit }}" != "true" ]; then
+            haxelib --global run hmm install
+            (cd "$(haxelib libpath hxcpp)/tools/hxcpp" && haxe compile.hxml)
+          fi
+          haxelib list
+
+      - name: Rebuild Lime
+        run: |
+          LIME=$(haxelib libpath lime)
+          if [ ! -f "$LIME/ndll/.psych-windows" ]; then
+            haxelib run lime rebuild windows -64 -release
+            touch "$LIME/ndll/.psych-windows"
+          fi
+
+      - name: Skip SScript setup mode
+        run: echo 'oy9:showMacroty8:loopCosti25y10:includeAllfg' >> ~/settings.cocoa
+
+      - name: Compile
+        run: |
+          set -o pipefail
+          if ! haxelib run lime build windows -D officialBuild 2>&1 | tee compile.log; then
+            grep -n -i -E "error|failed|exception" compile.log | tail -n 40 > errors.log || true
+            echo "::error title=lime build windows (errors)::$(sed 's/%/%25/g' errors.log | awk '{printf "%s%%0A", $0}')"
+            exit 1
+          fi
+
+      - name: Publish Artifact
+        uses: actions/upload-artifact@v4.3.4
+        with:
+          name: windowsBuild
+          path: export/release/windows/bin
+          if-no-files-found: error
+
+  buildMac:
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v4.1.7
+        with:
+          filter: blob:none
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /*
+            !/art/*
+            /art/icons/
+            /art/readme.txt
+            !/docs/
+            !/documents-mobile/
+
+      - uses: krdlab/setup-haxe@master
+        with:
+          haxe-version: ${{ env.HAXE_VERSION }}
+
+      - name: Restore Haxelibs
+        id: hmm-cache
+        uses: actions/cache@v4
+        with:
+          path: .haxelib
+          key: hmm-mac-${{ env.HAXE_VERSION }}-${{ hashFiles('hmm.json') }}
+
+      - name: Restore hxcpp Cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/hxcpp_cache
+          key: hxcpp-mac-${{ github.sha }}
+          restore-keys: hxcpp-mac-
+
+      - name: Install Haxelibs
+        run: |
+          mkdir -p "$RUNNER_TEMP/hxcpp_cache"
+          echo "HXCPP_COMPILE_CACHE=$RUNNER_TEMP/hxcpp_cache" >> $GITHUB_ENV
+          echo "HXCPP_COMPILE_THREADS=$(sysctl -n hw.ncpu)" >> $GITHUB_ENV
+          arch -x86_64 haxelib --global install hmm --quiet
+          if [ "${{ steps.hmm-cache.outputs.cache-hit }}" != "true" ]; then
+            arch -x86_64 haxelib --global run hmm install
+            (cd "$(arch -x86_64 haxelib libpath hxcpp)/tools/hxcpp" && arch -x86_64 haxe compile.hxml)
+          fi
+          arch -x86_64 haxelib list
+
+      - name: Rebuild Lime
+        run: |
+          LIME=$(arch -x86_64 haxelib libpath lime)
+          if [ ! -f "$LIME/ndll/.psych-mac" ]; then
+            arch -x86_64 haxelib run lime rebuild mac -64 -release
+            touch "$LIME/ndll/.psych-mac"
+          fi
+
+      - name: Skip SScript setup mode
+        run: echo 'oy9:showMacroty8:loopCosti25y10:includeAllfg' >> ~/settings.cocoa
+
+      - name: Compile
+        run: |
+          set -o pipefail
+          if ! arch -x86_64 haxelib run lime build mac -D officialBuild 2>&1 | tee compile.log; then
+            grep -n -i -E "error|failed|exception" compile.log | tail -n 40 > errors.log || true
+            echo "::error title=lime build mac (errors)::$(sed 's/%/%25/g' errors.log | awk '{printf "%s%%0A", $0}')"
+            exit 1
+          fi
+
+      - name: Package App
+        run: |
+          APP=$(find export/release/macos/bin -maxdepth 1 -name "*.app" | head -n 1)
+          if [ -z "$APP" ]; then echo "No .app found"; find export/release/macos -maxdepth 3; exit 1; fi
+          ditto -c -k --keepParent "$APP" PsychEngine-macOS.zip
+
+      - name: Publish Artifact
+        uses: actions/upload-artifact@v4.3.4
+        with:
+          name: macBuild
+          path: PsychEngine-macOS.zip
+          if-no-files-found: error
+          compression-level: 0
+
+  buildLinux:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4.1.7
+        with:
+          filter: blob:none
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /*
+            !/art/*
+            /art/icons/
+            /art/readme.txt
+            !/docs/
+            !/documents-mobile/
+
+      - name: Install System Libraries
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq g++ libx11-dev libxi-dev libxext-dev libxinerama-dev libxrandr-dev libgl-dev libgl1-mesa-dev libasound2-dev libpulse-dev libvlc-dev libvlccore-dev
+
+      - uses: krdlab/setup-haxe@master
+        with:
+          haxe-version: ${{ env.HAXE_VERSION }}
+
+      - name: Restore Haxelibs
+        id: hmm-cache
+        uses: actions/cache@v4
+        with:
+          path: .haxelib
+          key: hmm-linux-${{ env.HAXE_VERSION }}-${{ hashFiles('hmm.json') }}
+
+      - name: Restore hxcpp Cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/hxcpp_cache
+          key: hxcpp-linux-${{ github.sha }}
+          restore-keys: hxcpp-linux-
+
+      - name: Install Haxelibs
+        run: |
+          mkdir -p "$RUNNER_TEMP/hxcpp_cache"
+          echo "HXCPP_COMPILE_CACHE=$RUNNER_TEMP/hxcpp_cache" >> $GITHUB_ENV
+          echo "HXCPP_COMPILE_THREADS=$(nproc)" >> $GITHUB_ENV
+          haxelib --global install hmm --quiet
+          if [ "${{ steps.hmm-cache.outputs.cache-hit }}" != "true" ]; then
+            haxelib --global run hmm install
+            (cd "$(haxelib libpath hxcpp)/tools/hxcpp" && haxe compile.hxml)
+          fi
+          haxelib list
+
+      - name: Rebuild Lime
+        run: |
+          LIME=$(haxelib libpath lime)
+          if [ ! -f "$LIME/ndll/.psych-linux" ]; then
+            haxelib run lime rebuild linux -64 -release
+            touch "$LIME/ndll/.psych-linux"
+          fi
+
+      - name: Skip SScript setup mode
+        run: echo 'oy9:showMacroty8:loopCosti25y10:includeAllfg' >> ~/settings.cocoa
+
+      - name: Compile
+        run: |
+          set -o pipefail
+          if ! haxelib run lime build linux -D officialBuild 2>&1 | tee compile.log; then
+            grep -n -i -E "error|failed|exception" compile.log | tail -n 40 > errors.log || true
+            echo "::error title=lime build linux (errors)::$(sed 's/%/%25/g' errors.log | awk '{printf "%s%%0A", $0}')"
+            exit 1
+          fi
+
+      - name: Package Build
+        run: tar -czf PsychEngine-Linux.tar.gz -C export/release/linux/bin .
+
+      - name: Publish Artifact
+        uses: actions/upload-artifact@v4.3.4
+        with:
+          name: linuxBuild
+          path: PsychEngine-Linux.tar.gz
+          if-no-files-found: error
+          compression-level: 0
+
   release:
-    needs: [buildAndroid, buildiOS]
+    needs: [buildAndroid, buildiOS, buildWindows, buildMac, buildLinux]
     runs-on: ubuntu-latest
 
     steps:
@@ -267,6 +531,9 @@ jobs:
           if [ -z "$APK" ] || [ -z "$IPA" ]; then echo "Missing APK or IPA"; find builds; exit 1; fi
           cp "$APK" "release/PsychEngine-$TAG-android.apk"
           cp "$IPA" "release/PsychEngine-$TAG-ios.ipa"
+          (cd builds/windowsBuild && zip -qr -9 "../../release/PsychEngine-$TAG-windows.zip" .)
+          cp builds/macBuild/PsychEngine-macOS.zip "release/PsychEngine-$TAG-macos.zip"
+          cp builds/linuxBuild/PsychEngine-Linux.tar.gz "release/PsychEngine-$TAG-linux.tar.gz"
           NOTES="documents-mobile/releases/$TAG.md"
           if [ -f "$NOTES" ]; then cp "$NOTES" release-notes.md; else echo "Psych Engine Mobile $TAG" > release-notes.md; fi
           ls -la release

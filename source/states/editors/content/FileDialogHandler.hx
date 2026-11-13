@@ -11,11 +11,18 @@ import lime.ui.*;
 
 import flixel.FlxBasic;
 
+enum abstract BrowseMode(Int)
+{
+	var OPEN = 0;
+	var SAVE = 1;
+	var OPEN_DIRECTORY = 2;
+}
+
 //Currently only supports OPEN and SAVE, might change that in the future, who knows
 class FileDialogHandler extends FlxBasic
 {
 	var _fileRef:FileReferenceCustom;
-	var _dialogMode:FileDialogType = OPEN;
+	var _dialogMode:BrowseMode = OPEN;
 	public function new()
 	{
 		_fileRef = new FileReferenceCustom();
@@ -194,30 +201,33 @@ class FileReferenceCustom extends #if mobile mobile.native.MobileFileReference #
 		super.saveFileDialog_onSelect(path);
 	}
 	
-	public function browseEx(browseType:FileDialogType = OPEN, ?defaultName:String, ?title:String = null, ?typeFilter:Array<FileFilter> = null):Bool
+	public function browseEx(browseType:BrowseMode = OPEN, ?defaultName:String, ?title:String = null, ?typeFilter:Array<FileFilter> = null):Bool
 	{
 		__data = null;
 		__path = null;
 
 		#if desktop
-		var filter = null;
+		var filters:Array<FileDialogFilter> = null;
+		if (typeFilter != null && typeFilter.length > 0)
+			filters = [for (type in typeFilter) new FileDialogFilter(type.description, StringTools.replace(type.extension, "*.", ""))];
 
-		if (typeFilter != null)
+		var window = lime.app.Application.current.window;
+		if (browseType == OPEN_DIRECTORY)
 		{
-			var filters = [];
-
-			for (type in typeFilter)
+			FileDialog.openDirectory(window, title, function(paths:Array<String>)
 			{
-				filters.push(StringTools.replace(StringTools.replace(type.extension, "*.", ""), ";", ","));
-			}
-
-			filter = filters.join(";");
+				if (paths != null && paths.length > 0) openFileDialog_onSelect(paths[0]);
+				else openFileDialog_onCancel();
+			}, defaultName);
 		}
-
-		var openFileDialog = new FileDialog();
-		openFileDialog.onCancel.add(openFileDialog_onCancel);
-		openFileDialog.onSelect.add(openFileDialog_onSelect);
-		openFileDialog.browse(browseType, filter, defaultName, title);
+		else
+		{
+			FileDialog.openFile(window, title, function(paths:Array<String>, filter:FileDialogFilter)
+			{
+				if (paths != null && paths.length > 0) openFileDialog_onSelect(paths[0]);
+				else openFileDialog_onCancel();
+			}, filters, defaultName, false);
+		}
 		return true;
 		#elseif (js && html5)
 		var filter = null;

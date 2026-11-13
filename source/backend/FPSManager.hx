@@ -24,7 +24,7 @@ class FPSManager
 	static var initialized:Bool = false;
 	static var focused:Bool = true;
 	static var frames:Int = 0;
-	static var sampleStart:Int = 0;
+	static var sampleStart:Float = 0;
 	static var lowSamples:Int = 0;
 	static var highSamples:Int = 0;
 	static var lastDisplayRate:Int = 0;
@@ -126,7 +126,7 @@ class FPSManager
 	static function onDraw()
 	{
 		frames++;
-		var now:Int = Lib.getTimer();
+		var now:Float = Lib.getTimer();
 		var elapsed:Float = (now - sampleStart) / 1000;
 		if (elapsed < SAMPLE_TIME) return;
 

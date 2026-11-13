@@ -22,7 +22,7 @@ class TouchCursor extends Sprite
 	public static var instance(default, null):TouchCursor;
 
 	var points:Map<Int, CursorPoint> = new Map();
-	var lastTime:Int = 0;
+	var lastTime:Float = 0;
 
 	public static function init()
 	{
@@ -70,7 +70,7 @@ class TouchCursor extends Sprite
 
 	function onFrame(_)
 	{
-		var now:Int = Lib.getTimer();
+		var now:Float = Lib.getTimer();
 		var elapsed:Float = Math.min(0.1, (now - lastTime) / 1000);
 		lastTime = now;
 

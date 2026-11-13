@@ -15,7 +15,7 @@ typedef TouchPoint =
 	var startX:Float;
 	var startY:Float;
 	var lastY:Float;
-	var time:Int;
+	var time:Float;
 	var button:MobileButton;
 	var control:FlxObject;
 	var dragging:Bool;
