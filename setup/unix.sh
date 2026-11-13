@@ -20,6 +20,6 @@ haxelib git flxanimate https://github.com/Dot-Stuff/flxanimate 0188d47c982913eb1
 haxelib git linc_luajit https://github.com/superpowers04/linc_luajit daf0664aee99aa8b8d6bdd1eda993a1c3a399067
 haxelib git funkin.vis https://github.com/FunkinCrew/funkVis 22b1ce089dd924f15cdc4632397ef3504d464e90
 haxelib git grig.audio https://gitlab.com/haxe-grig/grig.audio.git cbf91e2180fd2e374924fe74844086aab7891666
-haxelib git extension-androidtools https://github.com/MAJigsaw77/extension-androidtools 4ef308412a7ae88a60862d1e97a4aa34765b1dcc
+haxelib git android-manager https://github.com/BrenninhoTools/android-manager 273b79a94a61730a040bf99138bdaf4da3a5adf5
 haxelib git extension-haptics https://github.com/LimeExtensions/extension-haptics 8978b34b437f943a0d164bd6b3d8b69bd0025081
 echo Finished!
