@@ -144,7 +144,7 @@ class Achievements {
 		return -1;
 	}
 
-	static var _lastUnlock:Int = -999;
+	static var _lastUnlock:Float = -999;
 	public static function unlock(name:String, autoStartPopup:Bool = true):String {
 		if(!achievements.exists(name))
 		{
@@ -159,7 +159,7 @@ class Achievements {
 		achievementsUnlocked.push(name);
 
 		// earrape prevention
-		var time:Int = openfl.Lib.getTimer();
+		var time:Float = openfl.Lib.getTimer();
 		if(Math.abs(time - _lastUnlock) >= 100) //If last unlocked happened in less than 100 ms (0.1s) ago, then don't play sound
 		{
 			FlxG.sound.play(Paths.sound('confirmMenu'), 0.5);

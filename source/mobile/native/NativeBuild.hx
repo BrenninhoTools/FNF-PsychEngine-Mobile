@@ -29,7 +29,7 @@ class NativeBuild
 		var dir:String = Path.normalize(FileSystem.absolutePath(Path.directory(sourceFile)));
 		while (dir.length > 1)
 		{
-			if (FileSystem.exists(dir + '/Project.xml')) return dir;
+			if (FileSystem.exists(dir + '/project.hxp') || FileSystem.exists(dir + '/Project.xml')) return dir;
 			var parent:String = Path.directory(dir);
 			if (parent == dir || parent.length == 0) break;
 			dir = parent;

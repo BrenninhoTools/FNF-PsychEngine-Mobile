@@ -1,0 +1,294 @@
+package;
+
+import hxp.*;
+import lime.tools.*;
+import sys.FileSystem;
+
+using StringTools;
+
+class Project extends HXProject
+{
+	static inline final TITLE:String = "Friday Night Funkin': Psych Engine";
+	static inline final MOBILE_TITLE:String = "FNF: Psych Engine";
+	static inline final FILE:String = "PsychEngine";
+	static inline final PACKAGE:String = "com.shadowmario.psychengine";
+	static inline final VERSION:String = "0.2.8";
+	static inline final COMPANY:String = "ShadowMario";
+
+	static final DEFAULT_EXCLUDE:Array<String> = [".*", "cvs", "thumbs.db", "desktop.ini", "*.fla", "*.hash"];
+
+	public function new()
+	{
+		super();
+
+		setupApplication();
+		setupFeatures();
+		setupWindow();
+		setupPlatforms();
+		setupAssets();
+		setupLibraries();
+		setupHaxedefs();
+		setupIcons();
+	}
+
+	function setupApplication()
+	{
+		meta.title = isMobile() ? MOBILE_TITLE : TITLE;
+		meta.packageName = PACKAGE;
+		meta.version = VERSION;
+		meta.company = COMPANY;
+
+		app.file = FILE;
+		app.main = "Main";
+		app.preloader = "flixel.system.FlxPreloader";
+		setDefine("SWF_VERSION", "11.8");
+		app.path = hasDefine("32bits") ? "export/32bit" : (debug ? "export/debug" : "export/release");
+
+		setDefine("APP_ID", "0x0100f6c013bbc000");
+		setHaxedef("LINC_LUA_RELATIVE_DYNAMIC_LIB");
+
+		sources.push("source");
+	}
+
+	function setupFeatures()
+	{
+		if (isDesktop() || isMobile())
+		{
+			enable("MODS_ALLOWED");
+			enable("HSCRIPT_ALLOWED");
+			enable("LUA_ALLOWED");
+		}
+		enable("ACHIEVEMENTS_ALLOWED");
+		if (isDesktop()) enable("DISCORD_ALLOWED");
+		enable("TRANSLATIONS_ALLOWED");
+		enable("IRIS_DEBUG");
+
+		enable("MULTITHREADED_LOADING");
+		enable("SHOW_LOADING_SCREEN");
+		enable("PSYCH_WATERMARKS");
+
+		if (hasDefine("officialBuild"))
+		{
+			enable("TITLE_SCREEN_EASTER_EGG");
+			enable("BASE_GAME_FILES");
+			var videoTarget:Bool = target == Platform.WINDOWS || target == Platform.LINUX || target == Platform.ANDROID || target == Platform.MAC || target == Platform.IOS;
+			if (videoTarget && !hasDefine("32bits")) enable("VIDEOS_ALLOWED");
+		}
+
+		if ((isDesktop() || isMobile()) && !debug) enable("CRASH_HANDLER");
+		if (isDesktop() && hasDefine("officialBuild")) enable("CHECK_FOR_UPDATES");
+		if (hasDefine("32bits")) enable("x86_BUILD");
+	}
+
+	function setupWindow()
+	{
+		window.width = 1280;
+		window.height = 720;
+		window.fps = 60;
+		window.background = 0x000000;
+		window.hardware = true;
+		window.vsync = false;
+		window.allowHighDPI = true;
+
+		if (isWeb()) window.resizable = true;
+
+		if (isDesktop())
+		{
+			window.orientation = Orientation.LANDSCAPE;
+			window.fullscreen = false;
+			window.resizable = true;
+			window.vsync = false;
+		}
+
+		if (isMobile())
+		{
+			window.orientation = Orientation.LANDSCAPE;
+			window.fullscreen = true;
+			window.width = 0;
+			window.height = 0;
+			window.resizable = false;
+		}
+	}
+
+	function setupPlatforms()
+	{
+		if (target == Platform.ANDROID)
+		{
+			architectures = [Architecture.ARM64];
+			excludeArchitectures = [Architecture.ARMV7, Architecture.X86];
+
+			if (hasDefine("ANDROID_SIGNING"))
+				keystore = new Keystore("release.keystore", Sys.getEnv("ANDROID_KEYSTORE_PASSWORD"), Sys.getEnv("ANDROID_KEY_ALIAS"), Sys.getEnv("ANDROID_KEY_PASSWORD"));
+
+			dependencies.push(new Dependency("psychmobile", "project/android/psychmobile"));
+			config.push("android.extension", "org.psychengine.mobile.FileDialogs");
+			config.push("android.extension", "org.psychengine.mobile.ScreenExtension");
+		}
+
+		if (target == Platform.IOS)
+		{
+			dependencies.push(new Dependency("PhotosUI.framework", null));
+			dependencies.push(new Dependency("AudioToolbox.framework", null));
+			templatePaths.push("templates");
+		}
+	}
+
+	function setupAssets()
+	{
+		var web:Bool = isWeb();
+		var skipAudio:String = web ? "*.ogg" : "*.mp3";
+
+		addAssetPath("assets/fonts");
+		addAssetPath("assets/shared", null, [skipAudio]);
+		addAssetPath("assets/embed", null, [skipAudio], true);
+		if (hasDefine("VIDEOS_ALLOWED")) addAssetPath("assets/videos");
+		addAssetPath("assets/songs", null, [skipAudio]);
+		addAssetPath("assets/week_assets", "assets", [skipAudio]);
+		if (hasDefine("TITLE_SCREEN_EASTER_EGG")) addAssetPath("assets/secrets", "assets/shared", [skipAudio]);
+		if (hasDefine("TRANSLATIONS_ALLOWED")) addAssetPath("assets/translations", "assets", [skipAudio]);
+		if (hasDefine("BASE_GAME_FILES")) addAssetPath("assets/base_game", "assets", [skipAudio]);
+
+		if (hasDefine("MODS_ALLOWED"))
+		{
+			if (target == Platform.MAC || isMobile()) addAssetPath("example_mods", "mods", null, false);
+			else addAssetPath("example_mods", "mods", null, false, AssetType.TEMPLATE);
+			assets.push(new Asset("list.txt", "modsList.txt"));
+		}
+		assets.push(new Asset("art/readme.txt", "do NOT readme.txt"));
+
+		if (isDesktop())
+			assets.push(new Asset("alsoft.txt", target == Platform.WINDOWS ? "plugins/alsoft.ini" : "plugins/alsoft.conf", AssetType.TEXT));
+
+		if (target == Platform.LINUX || target == Platform.MAC)
+			assets.push(new Asset("art/icons/iconOG.png", "icon.png"));
+	}
+
+	function setupLibraries()
+	{
+		addHaxelib("flixel");
+		addHaxelib("flixel-addons");
+		addHaxelib("tjson");
+
+		if (hasDefine("LUA_ALLOWED")) addHaxelib("linc_luajit");
+		if (hasDefine("HSCRIPT_ALLOWED")) addHaxelib("hscript-iris");
+		if (hasDefine("VIDEOS_ALLOWED")) addHaxelib("hxvlc");
+		if (hasDefine("DISCORD_ALLOWED")) addHaxelib("hxdiscord_rpc");
+		addHaxelib("flxanimate");
+		if (hasDefine("BASE_GAME_FILES"))
+		{
+			addHaxelib("grig.audio");
+			addHaxelib("funkin.vis");
+		}
+		if (target == Platform.ANDROID) addHaxelib("android-manager");
+		if (target == Platform.IOS) addHaxelib("extension-iostools");
+		if (isMobile()) addHaxelib("extension-haptics");
+		if (debug) addHaxelib("hxcpp-debug-server");
+	}
+
+	function setupHaxedefs()
+	{
+		if (hasDefine("DISCORD_ALLOWED")) setHaxedef("DISCORD_DISABLE_IO_THREAD");
+		if (target == Platform.LINUX) setHaxedef("NO_PRECOMPILED_HEADERS");
+
+		if (hasDefine("VIDEOS_ALLOWED"))
+		{
+			setHaxedef("HXVLC_NO_SHARE_DIRECTORY");
+			if (debug) setHaxedef("HXC_LIBVLC_LOGGING");
+		}
+
+		setHaxedef("FLX_NO_FOCUS_LOST_SCREEN");
+		if (debug) setHaxedef("HXC_DEBUG_TRACE");
+		else
+		{
+			setHaxedef("FLX_NO_DEBUG");
+			setHaxedef("NAPE_RELEASE_BUILD");
+		}
+
+		if (hasDefine("CRASH_HANDLER"))
+		{
+			setHaxedef("HXCPP_CHECK_POINTER");
+			setHaxedef("HXCPP_STACK_LINE");
+			setHaxedef("HXCPP_STACK_TRACE");
+		}
+
+		setHaxedef("no-deprecation-warnings");
+		setHaxedef("message.reporting", "pretty");
+		if (hasDefine("HSCRIPT_ALLOWED")) setHaxedef("hscriptPos");
+
+		haxeflags.push("--macro allowPackage('flash')");
+		haxeflags.push("--macro include('my.pack')");
+	}
+
+	function setupIcons()
+	{
+		icons.push(new Icon("art/icons/icon16.png", 16));
+		icons.push(new Icon("art/icons/icon32.png", 32));
+		icons.push(new Icon("art/icons/icon64.png", 64));
+		icons.push(new Icon("art/icons/iconOG.png"));
+	}
+
+	function enable(name:String)
+	{
+		setDefine(name);
+		setHaxedef(name);
+	}
+
+	function setDefine(name:String, value:String = "")
+	{
+		defines.set(name, value);
+	}
+
+	function setHaxedef(name:String, value:String = "")
+	{
+		haxedefs.set(name, value);
+	}
+
+	function hasDefine(name:String):Bool
+	{
+		return defines.exists(name);
+	}
+
+	function addHaxelib(name:String)
+	{
+		haxelibs.push(new Haxelib(name));
+	}
+
+	function isMobile():Bool
+	{
+		return platformType == PlatformType.MOBILE;
+	}
+
+	function isDesktop():Bool
+	{
+		return platformType == PlatformType.DESKTOP;
+	}
+
+	function isWeb():Bool
+	{
+		return platformType == PlatformType.WEB;
+	}
+
+	function addAssetPath(path:String, ?rename:String, ?exclude:Array<String>, ?embed:Bool, ?type:AssetType)
+	{
+		if (!FileSystem.exists(path) || !FileSystem.isDirectory(path)) return;
+		var excludes:Array<String> = DEFAULT_EXCLUDE.concat(exclude != null ? exclude : []);
+		addAssetFolder(path, rename != null ? rename : path, excludes, embed, type);
+	}
+
+	function addAssetFolder(path:String, targetPath:String, exclude:Array<String>, embed:Null<Bool>, type:AssetType)
+	{
+		for (file in FileSystem.readDirectory(path))
+		{
+			var full:String = path + "/" + file;
+			var renamed:String = targetPath + "/" + file;
+			if (FileSystem.isDirectory(full))
+			{
+				if (filter(file, ["*"], exclude)) addAssetFolder(full, renamed, exclude, embed, type);
+			}
+			else if (filter(file, ["*"], exclude))
+			{
+				assets.push(new Asset(full, renamed, type, embed));
+			}
+		}
+	}
+}

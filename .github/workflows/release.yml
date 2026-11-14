@@ -45,7 +45,7 @@ jobs:
       - name: Install System Libraries
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq g++ libx11-dev libxi-dev libxext-dev libxinerama-dev libxrandr-dev libgl-dev libgl1-mesa-dev libasound2-dev libpulse-dev
+          sudo apt-get install -y -qq g++ libx11-dev libxi-dev libxext-dev libxinerama-dev libxrandr-dev libgl-dev libgl1-mesa-dev libasound2-dev libpulse-dev libwayland-bin libwayland-dev wayland-protocols libxkbcommon-dev libegl-dev libdecor-0-dev libxcursor-dev libxss-dev libxtst-dev libdbus-1-dev libudev-dev
 
       - uses: nttld/setup-ndk@v1
         id: setup-ndk
@@ -77,7 +77,7 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: gradle-${{ hashFiles('Project.xml', 'project/android/**/*.gradle') }}
+          key: gradle-${{ hashFiles('project.hxp', 'project/android/**/*.gradle') }}
           restore-keys: gradle-
 
       - name: Install Haxelibs
@@ -445,7 +445,7 @@ jobs:
       - name: Install System Libraries
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq g++ libx11-dev libxi-dev libxext-dev libxinerama-dev libxrandr-dev libgl-dev libgl1-mesa-dev libasound2-dev libpulse-dev libvlc-dev libvlccore-dev
+          sudo apt-get install -y -qq g++ libx11-dev libxi-dev libxext-dev libxinerama-dev libxrandr-dev libgl-dev libgl1-mesa-dev libasound2-dev libpulse-dev libwayland-bin libwayland-dev wayland-protocols libxkbcommon-dev libegl-dev libdecor-0-dev libxcursor-dev libxss-dev libxtst-dev libdbus-1-dev libudev-dev libvlc-dev libvlccore-dev
 
       - uses: krdlab/setup-haxe@master
         with:
